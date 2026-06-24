@@ -11,14 +11,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const threeCanvas = document.getElementById('three-canvas');
     const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.9;
 
     const scene3d = new THREE.Scene();
-    scene3d.fog = new THREE.FogExp2(0x1a0a04, 0.018);
+    scene3d.fog = new THREE.FogExp2(0x0d0503, 0.008);
 
     const camera = new THREE.PerspectiveCamera(60, 16/9, 0.1, 200);
 
@@ -36,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     (function buildUpperFloor() {
         // Background cyclorama — large plane behind the scene
         const bgTex = texLoader.load('Gemini_Generated_Image_s48kdss48kdss48k.png');
-        bgTex.encoding = THREE.sRGBEncoding;
+
         const bgGeo = new THREE.PlaneGeometry(80, 45);
         const bgMat = new THREE.MeshBasicMaterial({ map: bgTex, side: THREE.FrontSide });
         const bgMesh = new THREE.Mesh(bgGeo, bgMat);
@@ -72,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ── Lower floor background plane ─────────────────────
     (function buildLowerFloor() {
         const bgTex = texLoader.load('Gemini_Generated_Image_njysn4njysn4njys.png');
-        bgTex.encoding = THREE.sRGBEncoding;
+
         const bgGeo = new THREE.PlaneGeometry(90, 50);
         const bgMat = new THREE.MeshBasicMaterial({ map: bgTex, side: THREE.FrontSide });
         const bgMesh = new THREE.Mesh(bgGeo, bgMat);
@@ -489,8 +484,10 @@ document.addEventListener("DOMContentLoaded", () => {
     //  RENDERER RESIZE
     // ════════════════════════════════════════════════════════
     function onResize() {
-        const W = wrapper.clientWidth;
-        const H = wrapper.clientHeight - document.getElementById('ui-bar').offsetHeight;
+        const uiH = document.getElementById('ui-bar').offsetHeight || 0;
+        const W = wrapper.clientWidth  || window.innerWidth;
+        const H = (wrapper.clientHeight || window.innerHeight) - uiH;
+        if (W < 1 || H < 1) return;
         renderer.setSize(W, H, false);
         camera.aspect = W / H;
         camera.updateProjectionMatrix();
@@ -498,7 +495,8 @@ document.addEventListener("DOMContentLoaded", () => {
         threeCanvas.style.height = H + 'px';
     }
     window.addEventListener('resize', onResize);
-    onResize();
+    // Defer initial resize until layout is painted
+    requestAnimationFrame(() => { onResize(); });
 
     // ════════════════════════════════════════════════════════
     //  MAIN RENDER LOOP
