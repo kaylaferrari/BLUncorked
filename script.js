@@ -13,12 +13,23 @@ document.addEventListener("DOMContentLoaded", () => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     const scene3d = new THREE.Scene();
-    scene3d.fog = new THREE.FogExp2(0x0d0503, 0.008);
+    renderer.setClearColor(0x0d0503);
 
-    const camera = new THREE.PerspectiveCamera(60, 16/9, 0.1, 200);
+    const camera = new THREE.PerspectiveCamera(55, 16/9, 0.1, 300);
 
     // Texture loader
     const texLoader = new THREE.TextureLoader();
+
+    // ── Background textures — set directly on scene so they always fill canvas ──
+    const upperBgTex = texLoader.load('Gemini_Generated_Image_s48kdss48kdss48k.png');
+    const lowerBgTex = texLoader.load('Gemini_Generated_Image_njysn4njysn4njys.png');
+    scene3d.background = upperBgTex;
+
+    // ── Scene lighting (scene-level so always active) ─────
+    scene3d.add(new THREE.AmbientLight(0xc8843a, 0.8));
+    const dirLight = new THREE.DirectionalLight(0xffcc88, 0.6);
+    dirLight.position.set(5, 14, 8);
+    scene3d.add(dirLight);
 
     // ── Floor groups ──────────────────────────────────────
     const upperGroup = new THREE.Group();
@@ -27,33 +38,15 @@ document.addEventListener("DOMContentLoaded", () => {
     scene3d.add(lowerGroup);
     lowerGroup.visible = false;
 
-    // ── Upper floor background plane ──────────────────────
+    // ── Upper floor geometry ──────────────────────────────
     (function buildUpperFloor() {
-        // Background cyclorama — large plane behind the scene
-        const bgTex = texLoader.load('Gemini_Generated_Image_s48kdss48kdss48k.png');
-
-        const bgGeo = new THREE.PlaneGeometry(80, 45);
-        const bgMat = new THREE.MeshBasicMaterial({ map: bgTex, side: THREE.FrontSide });
-        const bgMesh = new THREE.Mesh(bgGeo, bgMat);
-        bgMesh.position.set(0, 10, -35);
-        upperGroup.add(bgMesh);
-
-        // Floor plane
-        const floorGeo = new THREE.PlaneGeometry(60, 40);
-        const floorMat = new THREE.MeshLambertMaterial({ color: 0x3a1e08 });
+        // Transparent walkable floor — just geometry for raycasting / depth
+        const floorGeo = new THREE.PlaneGeometry(80, 60);
+        const floorMat = new THREE.MeshBasicMaterial({ color: 0x2a1005, transparent: true, opacity: 0.0 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.position.y = 0;
-        floor.receiveShadow = true;
         upperGroup.add(floor);
-
-        // Ambient + warm directional light
-        const ambLight = new THREE.AmbientLight(0xc8843a, 0.7);
-        upperGroup.add(ambLight);
-        const dirLight = new THREE.DirectionalLight(0xffcc88, 0.9);
-        dirLight.position.set(5, 14, 8);
-        dirLight.castShadow = true;
-        upperGroup.add(dirLight);
 
         // Pit opening — dark ellipse on floor
         const pitGeo = new THREE.CircleGeometry(9, 48);
@@ -64,38 +57,14 @@ document.addEventListener("DOMContentLoaded", () => {
         upperGroup.add(pit);
     })();
 
-    // ── Lower floor background plane ─────────────────────
+    // ── Lower floor geometry ──────────────────────────────
     (function buildLowerFloor() {
-        const bgTex = texLoader.load('Gemini_Generated_Image_njysn4njysn4njys.png');
-
-        const bgGeo = new THREE.PlaneGeometry(90, 50);
-        const bgMat = new THREE.MeshBasicMaterial({ map: bgTex, side: THREE.FrontSide });
-        const bgMesh = new THREE.Mesh(bgGeo, bgMat);
-        bgMesh.position.set(0, 10, -36);
-        lowerGroup.add(bgMesh);
-
-        const floorGeo = new THREE.PlaneGeometry(60, 40);
-        const floorMat = new THREE.MeshLambertMaterial({ color: 0x1a0d06 });
+        const floorGeo = new THREE.PlaneGeometry(80, 60);
+        const floorMat = new THREE.MeshBasicMaterial({ color: 0x100804, transparent: true, opacity: 0.0 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.position.y = 0;
-        floor.receiveShadow = true;
         lowerGroup.add(floor);
-
-        const ambLight = new THREE.AmbientLight(0x8a5520, 0.65);
-        lowerGroup.add(ambLight);
-        const dirLight = new THREE.DirectionalLight(0xff9944, 0.7);
-        dirLight.position.set(-6, 16, 4);
-        dirLight.castShadow = true;
-        lowerGroup.add(dirLight);
-
-        // Ceiling opening — bright glow disc
-        const ceilGeo = new THREE.CircleGeometry(5, 32);
-        const ceilMat = new THREE.MeshBasicMaterial({ color: 0xf0c870 });
-        const ceil = new THREE.Mesh(ceilGeo, ceilMat);
-        ceil.rotation.x = -Math.PI / 2;
-        ceil.position.set(0, 12, -8);
-        lowerGroup.add(ceil);
     })();
 
     // ── Player group (invisible geometry — just a position anchor) ──
@@ -134,7 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ════════════════════════════════════════════════════════
     //  CAMERA — spherical orbit with smooth follow
     // ════════════════════════════════════════════════════════
-    const sph = { theta: 0, phi: 0.88, r: 28 };
+    const sph = { theta: 0, phi: 1.15, r: 22 };
     const CAM_K = 4.5;
     let camBase = new THREE.Vector3();
     camBase.copy(playerGroup.position);
@@ -619,6 +588,7 @@ document.addEventListener("DOMContentLoaded", () => {
             currentScene = target;
             upperGroup.visible = target === 'upper';
             lowerGroup.visible = target === 'lower';
+            scene3d.background = target === 'lower' ? lowerBgTex : upperBgTex;
 
             floorLabel.textContent = target === 'lower' ? 'Sussex Cellar' : 'Upper Bar';
             btnUp.disabled   = target === 'upper';
