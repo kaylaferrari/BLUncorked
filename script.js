@@ -17,390 +17,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const camera = new THREE.PerspectiveCamera(55, 16/9, 0.1, 300);
 
-    // ── Scene background and shadow setup ────────────────
-    scene3d.background = new THREE.Color(0x0d0503);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // ── Background images fill canvas via scene.background ──────
+    const texLoader = new THREE.TextureLoader();
+    const upperBgTex = texLoader.load('Gemini_Generated_Image_s48kdss48kdss48k.png');
+    const lowerBgTex = texLoader.load('Gemini_Generated_Image_njysn4njysn4njys.png');
+    scene3d.background = upperBgTex;
 
-    // ── Floor groups ──────────────────────────────────────
+    // ── Floor groups (all geometry invisible — bg image is the visual) ──
     const upperGroup = new THREE.Group();
     const lowerGroup = new THREE.Group();
     scene3d.add(upperGroup);
     scene3d.add(lowerGroup);
     lowerGroup.visible = false;
 
-    // ════════════════════════════════════════════════════════
-    //  3D WORLD BUILDER — helper functions
-    // ════════════════════════════════════════════════════════
-    function box(w, h, d, color, x, y, z, ry) {
-        const m = new THREE.Mesh(
-            new THREE.BoxGeometry(w, h, d),
-            new THREE.MeshLambertMaterial({ color })
-        );
-        m.position.set(x, y, z);
-        if (ry) m.rotation.y = ry;
-        return m;
-    }
-    function cyl(rt, rb, h, color, x, y, z, segs) {
-        const m = new THREE.Mesh(
-            new THREE.CylinderGeometry(rt, rb, h, segs || 12),
-            new THREE.MeshLambertMaterial({ color })
-        );
-        m.position.set(x, y, z);
-        return m;
-    }
-    function ptLight(color, intensity, x, y, z, dist) {
-        const l = new THREE.PointLight(color, intensity, dist || 18);
-        l.position.set(x, y, z);
-        return l;
-    }
-    function wineRack(x, z, ry, group) {
-        const g = new THREE.Group();
-        // Backing panel: height=4, centre at y=2 (bottom on floor, top at y=4)
-        g.add(box(3.0, 4.0, 0.3, 0x3d1f0a, 0, 2.0, 0));
-        // Horizontal shelves at various heights
-        for (let sh = 0; sh < 4; sh++) {
-            g.add(box(2.8, 0.1, 0.5, 0x2e1608, 0, 0.8 + sh * 1.0, 0.15));
-        }
-        // Bottles lying on each shelf
-        const bCols = [0x1a3d14, 0x3d1010, 0x102038, 0x1a2808];
-        for (let sh = 0; sh < 3; sh++) {
-            for (let bi = 0; bi < 3; bi++) {
-                const bm = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.12, 0.14, 1.0, 8),
-                    new THREE.MeshLambertMaterial({ color: bCols[(sh * 3 + bi) % bCols.length] })
-                );
-                bm.rotation.x = Math.PI / 2;
-                // bottle centre: shelf y + bottle radius above shelf surface
-                bm.position.set((bi - 1) * 0.9, 0.95 + sh * 1.0, 0.05);
-                g.add(bm);
-            }
-        }
-        g.position.set(x, 0, z);
-        g.rotation.y = ry || 0;
-        group.add(g);
-    }
-    function barrel(x, z, yBase, group) {
-        // yBase = y of barrel bottom in world space; barrel body centre at yBase + 0.7
-        const g = new THREE.Group();
-        g.add(cyl(0.75, 0.65, 1.4, 0x5a2e0a, 0, 0.7, 0, 10)); // centre at y=0.7
-        for (const hy of [0.3, 0.7, 1.1]) {
-            const ring = new THREE.Mesh(
-                new THREE.TorusGeometry(0.77, 0.06, 6, 16),
-                new THREE.MeshLambertMaterial({ color: 0x8a6020 })
-            );
-            ring.rotation.x = Math.PI / 2;
-            ring.position.y = hy;
-            g.add(ring);
-        }
-        g.position.set(x, yBase || 0, z);
-        group.add(g);
-        return g;
-    }
+    // Invisible walk planes for click-to-walk raycasting only
+    const walkPlaneUpper = new THREE.Mesh(
+        new THREE.PlaneGeometry(120, 100),
+        new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide })
+    );
+    walkPlaneUpper.rotation.x = -Math.PI / 2;
+    upperGroup.add(walkPlaneUpper);
 
-    // ════════════════════════════════════════════════════════
-    //  BUILD UPPER FLOOR  (all y values = absolute centre)
-    // ════════════════════════════════════════════════════════
-    function buildUpperFloor() {
-        const u = upperGroup;
-
-        // ── Lighting ─────────────────────────────────────
-        u.add(new THREE.AmbientLight(0x7a4020, 1.4));
-        const sunU = new THREE.DirectionalLight(0xffdd99, 1.2);
-        sunU.position.set(5, 20, -5);
-        u.add(sunU);
-
-        // ── Wood floor ───────────────────────────────────
-        const floorU = new THREE.Mesh(
-            new THREE.PlaneGeometry(60, 58),
-            new THREE.MeshLambertMaterial({ color: 0x8a5a22 })
-        );
-        floorU.rotation.x = -Math.PI / 2;
-        u.add(floorU);
-        for (let pi = 0; pi < 10; pi++) {
-            const pl = new THREE.Mesh(
-                new THREE.PlaneGeometry(60, 0.06),
-                new THREE.MeshLambertMaterial({ color: 0x3a2008 })
-            );
-            pl.rotation.x = -Math.PI / 2;
-            pl.position.set(0, 0.01, -27 + pi * 6);
-            u.add(pl);
-        }
-
-        // ── Vaulted ceiling (half cylinder, inside visible) ──
-        const vaultU = new THREE.Mesh(
-            new THREE.CylinderGeometry(13, 13, 60, 22, 1, true, 0, Math.PI),
-            new THREE.MeshLambertMaterial({ color: 0x9a5a38, side: THREE.BackSide })
-        );
-        vaultU.rotation.z = Math.PI / 2;
-        vaultU.position.set(0, 13, 0);
-        u.add(vaultU);
-        // (no flat cap — open vault sides let light through)
-
-        // ── Walls ─────────────────────────────────────────
-        // back wall: height 16, centre y=8
-        u.add(box(62, 16, 0.8, 0x8a5030, 0, 8, -30));
-        // side walls: depth 62, centre y=8
-        u.add(box(0.8, 16, 62, 0x7a4828, -29, 8, -1));
-        u.add(box(0.8, 16, 62, 0x7a4828,  29, 8, -1));
-        // front wall (split for doors: 6 wide × 10 tall)
-        u.add(box(26, 16, 0.8, 0x7a4a32, -17, 8, 35));
-        u.add(box(26, 16, 0.8, 0x7a4a32,  17, 8, 35));
-        u.add(box(12, 6, 0.8, 0x7a4a32, 0, 13, 35));  // lintel
-
-        // ── Double doors ──────────────────────────────────
-        u.add(box(5.6, 10, 0.4, 0x3a1a06, -3, 5, 35));
-        u.add(box(5.6, 10, 0.4, 0x3a1a06,  3, 5, 35));
-        u.add(cyl(0.07, 0.07, 0.5, 0xc8963c, -0.5, 4.5, 35.3, 8));
-        u.add(cyl(0.07, 0.07, 0.5, 0xc8963c,  0.5, 4.5, 35.3, 8));
-        u.add(ptLight(0x44ff44, 0.6, 0, 3, 34, 5));
-
-        // ── Bar counter (z≈-23) ───────────────────────────
-        u.add(box(24, 1.1, 2.4, 0x2a1205, 0, 0.55, -23));   // counter body (centre y=0.55)
-        u.add(box(24.4, 0.15, 2.8, 0x5a3010, 0, 1.175, -23)); // top slab
-        // Back bar shelves on wall
-        for (let si = 0; si < 3; si++) {
-            const sy = 3.5 + si * 2.6;
-            u.add(box(20, 0.14, 0.7, 0x3a2008, 0, sy, -29.4));
-            const bbc = [0x1a3d14, 0x3d1010, 0x102038, 0x2a3008, 0x3a1028];
-            for (let bi = -9; bi <= 9; bi++) {
-                const c = bbc[(bi + si * 4 + 12) % bbc.length];
-                // bottle body: height 0.9, centre y = shelf + 0.52
-                u.add(cyl(0.12, 0.12, 0.9, c, bi * 2, sy + 0.52, -29.2, 8));
-                // neck: height 0.28, centre y = shelf + 1.01
-                u.add(cyl(0.05, 0.09, 0.28, c, bi * 2, sy + 1.01, -29.2, 8));
-            }
-        }
-        u.add(ptLight(0xffaa44, 2.0, 0, 7, -27, 30));
-
-        // ── Wine racks (side walls) ────────────────────────
-        wineRack(-26, -14, Math.PI / 2, u);
-        wineRack(-26,  -7, Math.PI / 2, u);
-        wineRack(-26,   0, Math.PI / 2, u);
-        wineRack( 26, -14, -Math.PI / 2, u);
-        wineRack( 26,  -7, -Math.PI / 2, u);
-        wineRack( 26,   0, -Math.PI / 2, u);
-
-        // ── Giant corkscrew (x=-20, z=-8) ─────────────────
-        u.add(cyl(0.45, 0.55, 0.35, 0xc8963c, -20, 0.175, -8, 28)); // base
-        u.add(cyl(0.14, 0.14, 3.2, 0xc8963c, -20, 1.6, -8, 8));     // shaft (centre y=1.6)
-        u.add(box(2.6, 0.18, 0.18, 0xc8963c, -20, 3.29, -8));        // handle
-        for (let hi = 0; hi < 8; hi++) {
-            const ang = (hi / 8) * Math.PI * 4;
-            const sp = new THREE.Mesh(
-                new THREE.SphereGeometry(0.1, 6, 4),
-                new THREE.MeshLambertMaterial({ color: 0xb8860b })
-            );
-            sp.position.set(-20 + Math.cos(ang) * 0.65, 0.5 + hi * 0.36, -8 + Math.sin(ang) * 0.65);
-            u.add(sp);
-        }
-        u.add(ptLight(0xffaa44, 0.5, -20, 5, -8, 8));
-
-        // ── Pit (centre at world 0,0,4) ───────────────────
-        const pitDisc = new THREE.Mesh(
-            new THREE.CircleGeometry(4.4, 32),
-            new THREE.MeshLambertMaterial({ color: 0x04010a })
-        );
-        pitDisc.rotation.x = -Math.PI / 2;
-        pitDisc.position.set(0, 0.05, 4);
-        u.add(pitDisc);
-        const pitRim = new THREE.Mesh(
-            new THREE.TorusGeometry(4.5, 0.3, 8, 36),
-            new THREE.MeshLambertMaterial({ color: 0xc8963c })
-        );
-        pitRim.rotation.x = Math.PI / 2;
-        pitRim.position.set(0, 0.3, 4);
-        u.add(pitRim);
-        const pitSurr = new THREE.Mesh(
-            new THREE.RingGeometry(4.5, 5.5, 32),
-            new THREE.MeshLambertMaterial({ color: 0x4a2e08, side: THREE.DoubleSide })
-        );
-        pitSurr.rotation.x = -Math.PI / 2;
-        pitSurr.position.set(0, 0.08, 4);
-        u.add(pitSurr);
-        u.add(ptLight(0x4466ff, 1.0, 0, -1, 4, 14));
-
-        // ── Chandeliers (hanging from y≈12) ───────────────
-        [[-12, -8], [0, -13], [12, -6]].forEach(([cx, cz]) => {
-            u.add(cyl(0.06, 0.06, 2.4, 0xb8860b, cx, 11.8, cz, 6)); // rod: centre y=11.8
-            const ring = new THREE.Mesh(
-                new THREE.TorusGeometry(0.85, 0.09, 6, 16),
-                new THREE.MeshLambertMaterial({ color: 0xc8963c })
-            );
-            ring.position.set(cx, 10.6, cz);
-            u.add(ring);
-            for (let gi = 0; gi < 5; gi++) {
-                const ang = (gi / 5) * Math.PI * 2;
-                const globe = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.14, 7, 6),
-                    new THREE.MeshLambertMaterial({ color: 0xffeeaa })
-                );
-                globe.position.set(cx + Math.cos(ang) * 0.85, 10.6, cz + Math.sin(ang) * 0.85);
-                u.add(globe);
-            }
-            u.add(ptLight(0xffdd88, 3.0, cx, 10, cz, 32));
-        });
-
-        // ── Wall sconces ───────────────────────────────────
-        [[-28, 5, -12], [28, 5, -12], [-28, 5, 8], [28, 5, 8]].forEach(([sx, sy, sz]) => {
-            u.add(box(0.3, 0.5, 0.5, 0xc8963c, sx, sy, sz));
-            u.add(ptLight(0xffaa55, 1.5, sx < 0 ? sx + 1 : sx - 1, sy, sz, 14));
-        });
-
-        // ── Sommelier gold floor ring (at x=20, z=8) ──────
-        const somRing = new THREE.Mesh(
-            new THREE.RingGeometry(1.3, 1.7, 32),
-            new THREE.MeshLambertMaterial({ color: 0xc8963c, side: THREE.DoubleSide })
-        );
-        somRing.rotation.x = -Math.PI / 2;
-        somRing.position.set(20, 0.04, 8);
-        u.add(somRing);
-        u.add(ptLight(0xffcc66, 0.9, 20, 5, 8, 12));
-
-        // ── Glowing bottle on pedestal (x=22, z=10) ───────
-        u.add(cyl(0.55, 0.65, 1.0, 0x2a1205, 22, 0.5, 10, 12));   // pedestal centre y=0.5
-        u.add(cyl(0.16, 0.20, 0.95, 0x1a5a1a, 22, 1.475, 10, 8)); // bottle centre y=1.475
-        u.add(cyl(0.06, 0.11, 0.30, 0x1a5a1a, 22, 2.1, 10, 8));   // neck centre y=2.1
-        u.add(ptLight(0x66ff44, 1.0, 22, 3, 10, 6));
-
-        // ── Round tables ───────────────────────────────────
-        [[-9, 8], [9, 8], [-9, 2]].forEach(([tx, tz]) => {
-            u.add(cyl(0.09, 0.09, 2.5, 0x2a1205, tx, 1.25, tz, 8)); // leg: centre y=1.25
-            u.add(cyl(1.0, 1.0, 0.1, 0x3a1a08, tx, 2.55, tz, 16));  // top: centre y=2.55
-            u.add(cyl(0.7, 0.7, 0.08, 0x3a1a08, tx, 0.04, tz, 16)); // foot base
-        });
-
-        // ── Corner barrels near entrance ──────────────────
-        barrel(-26, 22, 0, u); barrel(-24, 22, 0, u);
-        barrel( 24, 22, 0, u); barrel( 26, 22, 0, u);
-        barrel(-25, 22, 1.5, u); barrel(25, 22, 1.5, u); // stacked row
-    }
-
-    // ════════════════════════════════════════════════════════
-    //  BUILD LOWER FLOOR  (all y values = absolute centre)
-    // ════════════════════════════════════════════════════════
-    function buildLowerFloor() {
-        const lo = lowerGroup;
-
-        // ── Lighting ─────────────────────────────────────
-        lo.add(new THREE.AmbientLight(0x503818, 1.2));
-        lo.add(ptLight(0xff8833, 2.5, 0, 7, 0, 40));
-
-        // ── Stone floor ───────────────────────────────────
-        const floorL = new THREE.Mesh(
-            new THREE.PlaneGeometry(52, 44),
-            new THREE.MeshLambertMaterial({ color: 0x40382c })
-        );
-        floorL.rotation.x = -Math.PI / 2;
-        lo.add(floorL);
-        // Tile grid (alternating box pairs, y centre = 0.03)
-        const tileCols = [0x40382c, 0x302820];
-        for (let ti = 0; ti < 7; ti++) {
-            for (let tj = 0; tj < 6; tj++) {
-                const tile = new THREE.Mesh(
-                    new THREE.BoxGeometry(7, 0.06, 7),
-                    new THREE.MeshLambertMaterial({ color: tileCols[(ti + tj) % 2] })
-                );
-                tile.position.set(-21 + ti * 7, 0.03, -17.5 + tj * 7);
-                lo.add(tile);
-            }
-        }
-
-        // ── Low vault ceiling ─────────────────────────────
-        const vaultL = new THREE.Mesh(
-            new THREE.CylinderGeometry(9.5, 9.5, 52, 18, 1, true, 0, Math.PI),
-            new THREE.MeshLambertMaterial({ color: 0x261408, side: THREE.BackSide })
-        );
-        vaultL.rotation.z = Math.PI / 2;
-        vaultL.position.set(0, 9.5, 0);
-        lo.add(vaultL);
-        const capL = new THREE.Mesh(
-            new THREE.PlaneGeometry(52, 19),
-            new THREE.MeshLambertMaterial({ color: 0x1a0e04, side: THREE.BackSide })
-        );
-        capL.rotation.x = Math.PI / 2;
-        capL.position.set(0, 9.5, 0);
-        lo.add(capL);
-
-        // ── Walls (height 12, centre y=6) ─────────────────
-        const stoneCol = 0x4a3c2e;
-        lo.add(box(54, 12, 0.8, stoneCol, 0, 6, -22));
-        lo.add(box(54, 12, 0.8, stoneCol, 0, 6,  22));
-        lo.add(box(0.8, 12, 46, stoneCol, -25, 6, 0));
-        lo.add(box(0.8, 12, 46, stoneCol,  25, 6, 0));
-
-        // ── Ceiling opening (warm glow at y≈9.4, z=-8) ────
-        const ceilRing = new THREE.Mesh(
-            new THREE.RingGeometry(2.8, 3.8, 32),
-            new THREE.MeshLambertMaterial({ color: 0xb8820a, side: THREE.DoubleSide })
-        );
-        ceilRing.rotation.x = -Math.PI / 2;
-        ceilRing.position.set(0, 9.35, -8);
-        lo.add(ceilRing);
-        const ceilGlow = new THREE.Mesh(
-            new THREE.CircleGeometry(2.7, 32),
-            new THREE.MeshLambertMaterial({ color: 0xeebb44, emissive: 0x664400 })
-        );
-        ceilGlow.rotation.x = -Math.PI / 2;
-        ceilGlow.position.set(0, 9.4, -8);
-        lo.add(ceilGlow);
-        lo.add(ptLight(0xffdd88, 2.2, 0, 8, -8, 16));
-
-        // ── Barrel stacks left ─────────────────────────────
-        for (const bz of [-12, -6, 0, 6]) {
-            barrel(-22, bz, 0, lo);
-            barrel(-20, bz, 0, lo);
-        }
-        for (const bz of [-9, -3, 3]) {
-            barrel(-21, bz, 1.5, lo); // stacked: bottom at y=1.5, so barrel top at y=1.5+1.5=3
-        }
-
-        // ── Awards alcove (against z=-21 back wall) ────────
-        lo.add(box(12, 7, 0.3, 0x1e0a04, -18, 4.5, -21.5)); // back panel
-        for (let si = 0; si < 3; si++) {
-            lo.add(box(10, 0.14, 1.0, 0x3a2008, -18, 3.0 + si * 2.2, -21)); // shelf
-            for (let ti2 = 0; ti2 < 5; ti2++) {
-                const tx2 = -22 + ti2 * 2;
-                lo.add(cyl(0.18, 0.14, 0.55, 0xffd700, tx2, 3.35 + si * 2.2, -21, 8));  // stem
-                const cup = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.28, 0.12, 0.38, 8),
-                    new THREE.MeshLambertMaterial({ color: 0xffd700 })
-                );
-                cup.position.set(tx2, 3.82 + si * 2.2, -21);
-                lo.add(cup);
-            }
-        }
-        lo.add(ptLight(0xffdd44, 1.4, -18, 6, -20, 12));
-
-        // ── Wine racks right ──────────────────────────────
-        wineRack(22, -10, -Math.PI / 2, lo);
-        wineRack(22,  -3, -Math.PI / 2, lo);
-        wineRack(22,   5, -Math.PI / 2, lo);
-        lo.add(ptLight(0xffaa55, 0.6, 20, 4, -5, 10));
-
-        // ── Guide NPC floor ring (at x=0, z=8) ────────────
-        const guideRing = new THREE.Mesh(
-            new THREE.RingGeometry(1.2, 1.7, 32),
-            new THREE.MeshLambertMaterial({ color: 0xc8963c, side: THREE.DoubleSide })
-        );
-        guideRing.rotation.x = -Math.PI / 2;
-        guideRing.position.set(0, 0.04, 8);
-        lo.add(guideRing);
-        lo.add(ptLight(0xff9944, 0.7, 0, 5, 8, 10));
-
-        // ── Wall torches ───────────────────────────────────
-        [[-24, 5, -10], [24, 5, -10], [-24, 5, 10], [24, 5, 10]].forEach(([tx, ty, tz]) => {
-            lo.add(box(0.3, 0.6, 0.3, 0x8a4020, tx, ty, tz));
-            lo.add(ptLight(0xff6622, 0.8, tx < 0 ? tx + 1 : tx - 1, ty, tz, 8));
-        });
-    }
-    // Build both floors
-    buildUpperFloor();
-    buildLowerFloor();
+    const walkPlaneLower = new THREE.Mesh(
+        new THREE.PlaneGeometry(120, 100),
+        new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide })
+    );
+    walkPlaneLower.rotation.x = -Math.PI / 2;
+    lowerGroup.add(walkPlaneLower);
 
     // ── Player group (invisible geometry — just a position anchor) ──
     const playerGroup = new THREE.Group();
-    playerGroup.position.set(0, 0, 0);
+    playerGroup.position.set(0, 0, 4);
     scene3d.add(playerGroup);
 
     // ════════════════════════════════════════════════════════
@@ -434,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ════════════════════════════════════════════════════════
     //  CAMERA — spherical orbit with smooth follow
     // ════════════════════════════════════════════════════════
-    const sph = { theta: 0, phi: 0.92, r: 18 };
+    const sph = { theta: 0, phi: 1.05, r: 20 };
     const CAM_K = 4.5;
     let camBase = new THREE.Vector3();
     camBase.copy(playerGroup.position);
@@ -918,7 +565,7 @@ document.addEventListener("DOMContentLoaded", () => {
             currentScene = target;
             upperGroup.visible = target === 'upper';
             lowerGroup.visible = target === 'lower';
-            scene3d.background = new THREE.Color(target === 'lower' ? 0x080403 : 0x0d0503);
+            scene3d.background = target === 'lower' ? lowerBgTex : upperBgTex;
 
             floorLabel.textContent = target === 'lower' ? 'Sussex Cellar' : 'Upper Bar';
             btnUp.disabled   = target === 'upper';
@@ -928,7 +575,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (target === 'lower') {
                 playerGroup.position.set(0, 0, -2);
             } else {
-                playerGroup.position.set(0, 0, 4);
+                playerGroup.position.set(0, 0, 8);
             }
             camBase.copy(playerGroup.position);
 
