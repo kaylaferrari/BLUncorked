@@ -403,6 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function drawMinimap() {
+        if (!mmCtx) return;
         mmCtx.clearRect(0, 0, MM_SIZE, MM_SIZE);
 
         // Circular clip
@@ -492,8 +493,6 @@ document.addEventListener("DOMContentLoaded", () => {
         drawMinimap();
         renderer.render(scene3d, camera);
     }
-
-    animate();
 
     // ════════════════════════════════════════════════════════
     //  CANVAS CHROMA-KEY RENDERER (strips grey background)
@@ -965,5 +964,8 @@ document.addEventListener("DOMContentLoaded", () => {
         touchOrigin = null;
         keys['KeyW'] = keys['KeyS'] = keys['KeyA'] = keys['KeyD'] = false;
     }, { passive: true });
+
+    // Start render loop only after all declarations are complete
+    animate();
 
 });
