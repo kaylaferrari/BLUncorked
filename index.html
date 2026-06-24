@@ -3,21 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wine Cellar - Point & Click Adventure</title>
+    <title>BLUncorked</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-wrapper">
+
+        <!-- ═══ SCENE LAYER ═══ -->
         <div id="game-scene">
             <div id="background-image"></div>
 
-            <div class="hotspot prop" id="prop-corkscrew" style="top: 24%; left: 24%; width: 7%; height: 18%;" data-target="Giant Corkscrew"></div>
-            <div class="hotspot exit" id="door-exit" style="top: 20%; left: 59%; width: 10%; height: 20%;" data-target="Double Doors"></div>
-            <div class="hotspot npc" id="npc-sommelier" style="top: 26%; left: 74%; width: 8%; height: 24%;" data-target="Sommelier"></div>
-            <div class="hotspot item" id="item-bottle" style="top: 32%; left: 86%; width: 5%; height: 15%;" data-target="Glowing Bottle"></div>
-            <div class="hotspot prop" id="prop-pit" style="top: 50%; left: 20%; width: 60%; height: 32%; border-radius: 50%;" data-target="Lower Cellar"></div>
+            <!-- Upper level: table mask over pit opening -->
+            <div id="table-mask"></div>
+
+            <!-- ── UPPER LEVEL HOTSPOTS ── -->
+            <div class="hotspot zone" id="zone-welcome"
+                 style="top:5%; left:38%; width:24%; height:12%;"
+                 data-scene="upper" data-zone="welcome" data-label="Welcome to BL"></div>
+
+            <div class="hotspot prop" id="prop-corkscrew"
+                 style="top:24%; left:22%; width:7%; height:18%;"
+                 data-scene="upper" data-target="Giant Corkscrew"></div>
+
+            <div class="hotspot zone" id="zone-skills"
+                 style="top:28%; left:5%; width:18%; height:22%;"
+                 data-scene="upper" data-zone="skills" data-label="Skills Table"></div>
+
+            <div class="hotspot exit" id="door-exit"
+                 style="top:20%; left:59%; width:10%; height:20%;"
+                 data-scene="upper" data-target="Double Doors"></div>
+
+            <div class="hotspot zone" id="zone-casestudies"
+                 style="top:15%; left:50%; width:22%; height:18%;"
+                 data-scene="upper" data-zone="casestudies" data-label="Case Studies Corner"></div>
+
+            <div class="hotspot npc" id="npc-sommelier"
+                 style="top:26%; left:74%; width:8%; height:24%;"
+                 data-scene="upper" data-target="Sommelier"></div>
+
+            <div class="hotspot item" id="item-bottle"
+                 style="top:32%; left:86%; width:5%; height:15%;"
+                 data-scene="upper" data-target="Glowing Bottle"></div>
+
+            <div class="hotspot zone" id="zone-vintage"
+                 style="top:14%; left:79%; width:18%; height:20%;"
+                 data-scene="upper" data-zone="vintage" data-label="The Vintage Wall"></div>
+
+            <!-- Pit = go downstairs -->
+            <div class="hotspot exit" id="prop-pit"
+                 style="top:50%; left:20%; width:60%; height:32%; border-radius:50%;"
+                 data-scene="upper" data-target="Lower Cellar" data-goto="lower"></div>
+
+            <!-- ── LOWER LEVEL HOTSPOTS (hidden until lower scene) ── -->
+            <div class="hotspot exit lower-only" id="cellar-up"
+                 style="top:5%; left:30%; width:40%; height:18%; border-radius:50%;"
+                 data-scene="lower" data-target="Ceiling Opening" data-goto="upper"></div>
+
+            <div class="hotspot zone lower-only" id="zone-awards"
+                 style="top:20%; left:5%; width:25%; height:55%;"
+                 data-scene="lower" data-zone="awards" data-label="Awards Alcove"></div>
+
+            <div class="hotspot npc lower-only" id="npc-guide"
+                 style="top:26%; left:32%; width:7%; height:22%;"
+                 data-scene="lower" data-target="Guide"></div>
+
+            <div class="hotspot zone lower-only" id="zone-vintage-lower"
+                 style="top:20%; left:70%; width:25%; height:55%;"
+                 data-scene="lower" data-zone="vintage" data-label="The Vintage Wall"></div>
         </div>
 
+        <!-- ═══ UI BAR ═══ -->
         <div id="ui-bar">
             <div class="action-buttons">
                 <button id="btn-look" class="active">Look</button>
@@ -25,7 +80,13 @@
                 <button id="btn-talk">Talk</button>
                 <button id="btn-use">Use</button>
             </div>
-
+            <div id="floor-indicator">
+                <span id="floor-label">Upper Bar</span>
+                <div id="floor-arrows">
+                    <button id="btn-up" class="floor-btn" title="Go up" disabled>▲</button>
+                    <button id="btn-down" class="floor-btn" title="Go down">▼</button>
+                </div>
+            </div>
             <div class="inventory-slots">
                 <div class="slot" id="slot-0"></div>
                 <div class="slot" id="slot-1"></div>
@@ -36,7 +97,32 @@
             </div>
         </div>
 
-        <div id="dialogue-box">Welcome to the Cellar...</div>
+        <!-- ═══ DIALOGUE BOX ═══ -->
+        <div id="dialogue-box" class="hidden"></div>
+
+        <!-- ═══ SOMMELIER DIALOGUE PANEL ═══ -->
+        <div id="dialogue-panel" class="panel hidden">
+            <div class="panel-header">
+                <span class="panel-avatar">🧔</span>
+                <span id="dialogue-speaker">The Sommelier</span>
+                <button class="panel-close" data-panel="dialogue-panel">✕</button>
+            </div>
+            <div id="dialogue-text"></div>
+            <div id="dialogue-choices"></div>
+        </div>
+
+        <!-- ═══ ZONE CONTENT PANEL ═══ -->
+        <div id="zone-panel" class="panel hidden">
+            <div class="panel-header">
+                <span id="zone-panel-icon"></span>
+                <span id="zone-panel-title"></span>
+                <button class="panel-close" data-panel="zone-panel">✕</button>
+            </div>
+            <div id="zone-panel-body"></div>
+        </div>
+
+        <!-- ═══ SCENE TRANSITION OVERLAY ═══ -->
+        <div id="transition-overlay"></div>
     </div>
 
     <script src="script.js"></script>
