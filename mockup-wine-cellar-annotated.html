@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wine Cellar — Designer Annotated Mockup</title>
+<style>
+  body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
+  h1 { color: #c8a96e; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin: 8px 0 4px; }
+  p.sub { color: #666; font-size: 11px; margin: 0 0 8px; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<h1>BLUncorked — Wine Cellar · Designer Implementation Mockup</h1>
+<p class="sub">No player character · All interactive elements annotated · For dev handoff</p>
+
+<svg viewBox="0 0 1600 1000" width="1440" height="900" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Brick texture gradient -->
+  <linearGradient id="brickGrad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#7a3a20"/>
+    <stop offset="100%" stop-color="#5c2c14"/>
+  </linearGradient>
+  <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#a0682a"/>
+    <stop offset="100%" stop-color="#7a4a1a"/>
+  </linearGradient>
+  <linearGradient id="ceilingGrad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#f5e8cc"/>
+    <stop offset="100%" stop-color="#d4b880"/>
+  </linearGradient>
+  <linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#8ab4cc" stop-opacity="0.4"/>
+    <stop offset="50%" stop-color="#c8e4f4" stop-opacity="0.2"/>
+    <stop offset="100%" stop-color="#8ab4cc" stop-opacity="0.4"/>
+  </linearGradient>
+  <linearGradient id="pitWallGrad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#5a3010"/>
+    <stop offset="100%" stop-color="#3a1e08"/>
+  </linearGradient>
+  <radialGradient id="glowBottle" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#88ff44" stop-opacity="0.9"/>
+    <stop offset="60%" stop-color="#44cc22" stop-opacity="0.6"/>
+    <stop offset="100%" stop-color="#228800" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="glow">
+    <feGaussianBlur stdDeviation="4" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="softShadow">
+    <feDropShadow dx="2" dy="4" stdDeviation="3" flood-opacity="0.4"/>
+  </filter>
+
+  <!-- Annotation tag style via clipPath trick — labels done inline -->
+</defs>
+
+<!-- ═══════════════════════════════════════════════════════ BACKGROUND -->
+
+<!-- Full sky/ceiling area behind arches -->
+<rect x="0" y="0" width="1600" height="680" fill="#c8a060"/>
+
+<!-- Main brick wall background -->
+<rect x="0" y="0" width="1600" height="660" fill="#8b4820"/>
+
+<!-- Brick rows -->
+<g fill="none" stroke="#6a3210" stroke-width="1.5" opacity="0.5">
+  <!-- horizontal mortar lines -->
+  <line x1="0" y1="60" x2="1600" y2="60"/>
+  <line x1="0" y1="90" x2="1600" y2="90"/>
+  <line x1="0" y1="120" x2="1600" y2="120"/>
+  <line x1="0" y1="150" x2="1600" y2="150"/>
+  <line x1="0" y1="180" x2="1600" y2="180"/>
+  <line x1="0" y1="210" x2="1600" y2="210"/>
+  <line x1="0" y1="240" x2="1600" y2="240"/>
+  <line x1="0" y1="270" x2="1600" y2="270"/>
+  <line x1="0" y1="300" x2="1600" y2="300"/>
+  <line x1="0" y1="330" x2="1600" y2="330"/>
+  <line x1="0" y1="360" x2="1600" y2="360"/>
+  <line x1="0" y1="390" x2="1600" y2="390"/>
+  <line x1="0" y1="420" x2="1600" y2="420"/>
+  <line x1="0" y1="450" x2="1600" y2="450"/>
+  <line x1="0" y1="480" x2="1600" y2="480"/>
+  <line x1="0" y1="510" x2="1600" y2="510"/>
+  <line x1="0" y1="540" x2="1600" y2="540"/>
+  <line x1="0" y1="570" x2="1600" y2="570"/>
+  <line x1="0" y1="600" x2="1600" y2="600"/>
+  <line x1="0" y1="630" x2="1600" y2="630"/>
+</g>
+
+<!-- ═══════════════════════════════════════ THREE BARREL VAULT ARCHES -->
+
+<!-- Left arch vault (large) -->
+<path d="M -80 660 Q -80 80 420 80 Q 920 80 920 660" fill="#c8a060" stroke="#b08040" stroke-width="18"/>
+<!-- Left arch inner shadow -->
+<path d="M 20 660 Q 20 160 420 160 Q 820 160 820 660" fill="#8b4820" stroke="none"/>
+
+<!-- Center arch vault -->
+<path d="M 520 660 Q 520 60 800 60 Q 1080 60 1080 660" fill="#c8a060" stroke="#b08040" stroke-width="18"/>
+<path d="M 580 660 Q 580 130 800 130 Q 1020 130 1020 660" fill="#d4b080" stroke="none"/>
+
+<!-- Right arch vault (partial) -->
+<path d="M 980 660 Q 980 80 1400 80 Q 1700 80 1700 660" fill="#c8a060" stroke="#b08040" stroke-width="18"/>
+<path d="M 1040 660 Q 1040 160 1360 160 Q 1680 160 1680 660" fill="#8b4820" stroke="none"/>
+
+<!-- ════════════════════════════════════════ BACK WALL (pale plaster) -->
+<rect x="520" y="130" width="560" height="500" fill="#e8d8b0" rx="4"/>
+
+<!-- ════════════════════════════════════════════ WINE SHELVES BACK WALL -->
+
+<!-- Left shelf unit -->
+<rect x="530" y="155" width="120" height="280" fill="#7a5030" rx="3"/>
+<!-- shelf dividers -->
+<rect x="530" y="215" width="120" height="6" fill="#5a3818"/>
+<rect x="530" y="275" width="120" height="6" fill="#5a3818"/>
+<rect x="530" y="335" width="120" height="6" fill="#5a3818"/>
+<rect x="578" y="155" width="5" height="280" fill="#5a3818"/>
+<!-- bottles left shelf -->
+<g fill="#2a5020" stroke="#1a3010" stroke-width="1">
+  <ellipse cx="550" cy="205" rx="7" ry="18"/><ellipse cx="568" cy="205" rx="7" ry="18"/>
+  <ellipse cx="550" cy="262" rx="7" ry="18"/><ellipse cx="568" cy="262" rx="7" ry="18"/>
+  <ellipse cx="550" cy="322" rx="7" ry="18"/><ellipse cx="568" cy="322" rx="7" ry="18"/>
+  <ellipse cx="550" cy="382" rx="7" ry="18"/><ellipse cx="568" cy="382" rx="7" ry="18"/>
+</g>
+<g fill="#3a2010" stroke="#1a0808" stroke-width="1">
+  <ellipse cx="595" cy="205" rx="7" ry="18"/><ellipse cx="613" cy="205" rx="7" ry="18"/>
+  <ellipse cx="595" cy="262" rx="7" ry="18"/><ellipse cx="613" cy="262" rx="7" ry="18"/>
+  <ellipse cx="595" cy="322" rx="7" ry="18"/><ellipse cx="613" cy="322" rx="7" ry="18"/>
+  <ellipse cx="595" cy="382" rx="7" ry="18"/><ellipse cx="613" cy="382" rx="7" ry="18"/>
+</g>
+
+<!-- Right shelf unit -->
+<rect x="930" y="155" width="120" height="280" fill="#7a5030" rx="3"/>
+<rect x="930" y="215" width="120" height="6" fill="#5a3818"/>
+<rect x="930" y="275" width="120" height="6" fill="#5a3818"/>
+<rect x="930" y="335" width="120" height="6" fill="#5a3818"/>
+<rect x="978" y="155" width="5" height="280" fill="#5a3818"/>
+<g fill="#2a5020" stroke="#1a3010" stroke-width="1">
+  <ellipse cx="950" cy="205" rx="7" ry="18"/><ellipse cx="968" cy="205" rx="7" ry="18"/>
+  <ellipse cx="950" cy="262" rx="7" ry="18"/><ellipse cx="968" cy="262" rx="7" ry="18"/>
+  <ellipse cx="950" cy="322" rx="7" ry="18"/><ellipse cx="968" cy="322" rx="7" ry="18"/>
+  <ellipse cx="950" cy="382" rx="7" ry="18"/><ellipse cx="968" cy="382" rx="7" ry="18"/>
+</g>
+<g fill="#3a2010" stroke="#1a0808" stroke-width="1">
+  <ellipse cx="995" cy="205" rx="7" ry="18"/><ellipse cx="1013" cy="205" rx="7" ry="18"/>
+  <ellipse cx="995" cy="262" rx="7" ry="18"/><ellipse cx="1013" cy="262" rx="7" ry="18"/>
+  <ellipse cx="995" cy="322" rx="7" ry="18"/><ellipse cx="1013" cy="322" rx="7" ry="18"/>
+  <ellipse cx="995" cy="382" rx="7" ry="18"/><ellipse cx="1013" cy="382" rx="7" ry="18"/>
+</g>
+
+<!-- ════════════════════════════════════════════════════ CENTER DOOR -->
+<!-- Door frame -->
+<rect x="730" y="210" width="140" height="220" fill="#6a4020" rx="6"/>
+<!-- Door panels -->
+<rect x="742" y="222" width="52" height="90" fill="#8a5830" rx="3"/>
+<rect x="800" y="222" width="52" height="90" fill="#8a5830" rx="3"/>
+<rect x="742" y="320" width="52" height="96" fill="#8a5830" rx="3"/>
+<rect x="800" y="320" width="52" height="96" fill="#8a5830" rx="3"/>
+<!-- Door handles -->
+<circle cx="793" cy="330" r="5" fill="#d4a840"/>
+<circle cx="807" cy="330" r="5" fill="#d4a840"/>
+<!-- Green EXIT arrow -->
+<polygon points="870,305 900,290 900,300 930,300 930,310 900,310 900,320" fill="#44cc22" stroke="#228800" stroke-width="2"/>
+
+<!-- ═══════════════════════════════════════════ FLOOR (wooden planks) -->
+<rect x="0" y="610" width="1600" height="390" fill="#8a5828"/>
+<!-- Plank lines -->
+<g stroke="#6a3e18" stroke-width="2" opacity="0.6">
+  <line x1="0" y1="650" x2="1600" y2="650"/>
+  <line x1="0" y1="690" x2="1600" y2="690"/>
+  <line x1="0" y1="730" x2="1600" y2="730"/>
+  <line x1="0" y1="770" x2="1600" y2="770"/>
+  <line x1="0" y1="810" x2="1600" y2="810"/>
+  <!-- vertical plank seams -->
+  <line x1="160" y1="610" x2="160" y2="810"/>
+  <line x1="320" y1="610" x2="320" y2="810"/>
+  <line x1="480" y1="610" x2="480" y2="810"/>
+  <line x1="640" y1="610" x2="640" y2="810"/>
+  <line x1="800" y1="610" x2="800" y2="810"/>
+  <line x1="960" y1="610" x2="960" y2="810"/>
+  <line x1="1120" y1="610" x2="1120" y2="810"/>
+  <line x1="1280" y1="610" x2="1280" y2="810"/>
+  <line x1="1440" y1="610" x2="1440" y2="810"/>
+</g>
+
+<!-- ══════════════════════════════════ ELEVATED UPPER-LEFT PLATFORM -->
+<rect x="60" y="370" width="440" height="260" fill="#9a6030" rx="4"/>
+<rect x="60" y="370" width="440" height="12" fill="#b07840" rx="4"/>
+<!-- platform edge detail -->
+<rect x="60" y="600" width="440" height="30" fill="#7a4820"/>
+
+<!-- Platform floor planks -->
+<g stroke="#7a4820" stroke-width="2" opacity="0.5">
+  <line x1="60" y1="420" x2="500" y2="420"/>
+  <line x1="60" y1="470" x2="500" y2="470"/>
+  <line x1="60" y1="520" x2="500" y2="520"/>
+  <line x1="60" y1="570" x2="500" y2="570"/>
+</g>
+
+<!-- Glass railing on platform edge -->
+<rect x="60" y="382" width="440" height="80" fill="#a8d0e8" fill-opacity="0.18" stroke="#c8e4f4" stroke-width="3"/>
+<!-- Railing posts -->
+<rect x="80" y="375" width="6" height="90" fill="#b08040" rx="2"/>
+<rect x="200" y="375" width="6" height="90" fill="#b08040" rx="2"/>
+<rect x="340" y="375" width="6" height="90" fill="#b08040" rx="2"/>
+<rect x="480" y="375" width="6" height="90" fill="#b08040" rx="2"/>
+<!-- top rail -->
+<rect x="60" y="373" width="440" height="10" fill="#c89040" rx="4"/>
+
+<!-- ════════════════════════════════════ ANTIQUE CORKSCREW PROP (left) -->
+<!-- Base/stand -->
+<rect x="200" y="490" width="60" height="80" fill="#c89840" stroke="#a07020" stroke-width="2" rx="4"/>
+<rect x="190" y="560" width="80" height="12" fill="#a07020" rx="3"/>
+<!-- Vertical screw shaft -->
+<rect x="226" y="400" width="8" height="100" fill="#d4a840" stroke="#a07020" stroke-width="1"/>
+<!-- Horizontal arms -->
+<rect x="165" y="435" width="130" height="12" fill="#c89840" stroke="#a07020" stroke-width="2" rx="4"/>
+<rect x="165" y="460" width="130" height="10" fill="#b08030" stroke="#a07020" stroke-width="1.5" rx="3"/>
+<!-- Screw helix (simplified) -->
+<path d="M230 400 Q248 415 230 425 Q212 435 230 445 Q248 455 230 465 Q212 475 230 485" fill="none" stroke="#a07020" stroke-width="3"/>
+<!-- Corkscrew handle top -->
+<ellipse cx="230" cy="398" rx="28" ry="10" fill="#c89840" stroke="#a07020" stroke-width="2"/>
+<rect x="202" y="380" width="56" height="20" fill="#d4a840" stroke="#a07020" stroke-width="2" rx="5"/>
+
+<!-- ════════════════════════════════════════════════ RIGHT WING AREA -->
+<!-- Right wall wine racks (large, on arch wall) -->
+<rect x="1180" y="280" width="260" height="320" fill="#6a4020" rx="4"/>
+<!-- rack rows -->
+<g fill="none" stroke="#4a2810" stroke-width="2">
+  <line x1="1180" y1="340" x2="1440" y2="340"/>
+  <line x1="1180" y1="400" x2="1440" y2="400"/>
+  <line x1="1180" y1="460" x2="1440" y2="460"/>
+  <line x1="1180" y1="520" x2="1440" y2="520"/>
+  <line x1="1310" y1="280" x2="1310" y2="600"/>
+</g>
+<!-- Bottle silhouettes in rack -->
+<g fill="#2a4018" stroke="#1a2808" stroke-width="1">
+  <ellipse cx="1220" cy="315" rx="10" ry="22"/>
+  <ellipse cx="1250" cy="315" rx="10" ry="22"/>
+  <ellipse cx="1270" cy="315" rx="10" ry="22"/>
+  <ellipse cx="1220" cy="375" rx="10" ry="22"/>
+  <ellipse cx="1250" cy="375" rx="10" ry="22"/>
+  <ellipse cx="1270" cy="375" rx="10" ry="22"/>
+  <ellipse cx="1340" cy="315" rx="10" ry="22"/>
+  <ellipse cx="1370" cy="315" rx="10" ry="22"/>
+  <ellipse cx="1400" cy="315" rx="10" ry="22"/>
+  <ellipse cx="1340" cy="375" rx="10" ry="22"/>
+  <ellipse cx="1370" cy="375" rx="10" ry="22"/>
+  <ellipse cx="1400" cy="375" rx="10" ry="22"/>
+</g>
+<!-- Diagonal stacked bottles lower rack -->
+<g fill="#3a2018" stroke="#1a0808" stroke-width="1" opacity="0.9">
+  <ellipse cx="1210" cy="440" rx="22" ry="10" transform="rotate(-30,1210,440)"/>
+  <ellipse cx="1240" cy="455" rx="22" ry="10" transform="rotate(-30,1240,455)"/>
+  <ellipse cx="1270" cy="440" rx="22" ry="10" transform="rotate(-30,1270,440)"/>
+  <ellipse cx="1330" cy="440" rx="22" ry="10" transform="rotate(-30,1330,440)"/>
+  <ellipse cx="1360" cy="455" rx="22" ry="10" transform="rotate(-30,1360,455)"/>
+  <ellipse cx="1390" cy="440" rx="22" ry="10" transform="rotate(-30,1390,440)"/>
+</g>
+
+<!-- ══════════════════════════════════════ GLOWING BOTTLE (PICKUP) -->
+<!-- Glow halo -->
+<ellipse cx="1490" cy="420" rx="55" ry="65" fill="url(#glowBottle)" opacity="0.7"/>
+<ellipse cx="1490" cy="420" rx="30" ry="40" fill="#66ee22" opacity="0.3"/>
+<!-- Bottle body -->
+<rect x="1476" y="380" width="28" height="80" fill="#2a8820" stroke="#1a5510" stroke-width="2" rx="6"/>
+<!-- Bottle neck -->
+<rect x="1482" y="355" width="16" height="30" fill="#2a8820" stroke="#1a5510" stroke-width="2" rx="3"/>
+<!-- Bottle top -->
+<rect x="1484" y="348" width="12" height="10" fill="#1a5510" rx="2"/>
+<!-- Label -->
+<rect x="1479" y="400" width="22" height="28" fill="#e8d890" rx="2" stroke="#c8a040" stroke-width="1"/>
+<text x="1490" y="413" text-anchor="middle" font-size="7" fill="#4a3010">BL</text>
+<text x="1490" y="422" text-anchor="middle" font-size="6" fill="#4a3010">ELIXIR</text>
+<!-- Sparkle effects -->
+<g fill="#aaffaa" font-size="16">
+  <text x="1540" y="370">✦</text>
+  <text x="1448" y="358">✦</text>
+  <text x="1520" y="480">✦</text>
+</g>
+
+<!-- ═══════════════════════════════ CIRCULAR GLASS PIT (center stage) -->
+<!-- Pit outer ring / railing top -->
+<ellipse cx="780" cy="620" rx="360" ry="130" fill="#8a5828" stroke="#c89040" stroke-width="18"/>
+<ellipse cx="780" cy="620" rx="345" ry="118" fill="none" stroke="#d4a840" stroke-width="5"/>
+
+<!-- Glass cylinder walls -->
+<ellipse cx="780" cy="630" rx="330" ry="112" fill="url(#glassGrad)" stroke="#9ad4f0" stroke-width="3"/>
+
+<!-- Pit interior (lower cellar dining room) -->
+<ellipse cx="780" cy="640" rx="315" ry="100" fill="#3a2010"/>
+
+<!-- Lower cellar floor -->
+<ellipse cx="780" cy="680" rx="300" ry="72" fill="#5a3820"/>
+
+<!-- Dining table in pit -->
+<rect x="620" y="660" width="320" height="48" fill="#8a5028" rx="8" stroke="#5a3010" stroke-width="2"/>
+<!-- Table settings (plates) -->
+<g fill="none" stroke="#c8c0a0" stroke-width="2">
+  <ellipse cx="660" cy="668" rx="18" ry="8"/>
+  <ellipse cx="720" cy="668" rx="18" ry="8"/>
+  <ellipse cx="780" cy="668" rx="18" ry="8"/>
+  <ellipse cx="840" cy="668" rx="18" ry="8"/>
+  <ellipse cx="900" cy="668" rx="18" ry="8"/>
+</g>
+
+<!-- Wine shelves visible in lower cellar background -->
+<rect x="500" y="620" width="100" height="80" fill="#4a2c10" rx="2"/>
+<rect x="960" y="620" width="100" height="80" fill="#4a2c10" rx="2"/>
+
+<!-- NPCs in lower cellar (tiny silhouettes) -->
+<!-- Person 1 -->
+<ellipse cx="700" cy="660" rx="10" ry="5" fill="#c8a080"/><!-- head -->
+<rect x="695" y="660" width="20" height="30" fill="#4060a0" rx="3"/><!-- body -->
+<!-- Person 2 -->
+<ellipse cx="760" cy="658" rx="10" ry="5" fill="#d4b090"/>
+<rect x="755" y="658" width="20" height="30" fill="#805040" rx="3"/>
+<!-- Person 3 (child/small) -->
+<ellipse cx="810" cy="665" rx="8" ry="4" fill="#c89070"/>
+<rect x="806" y="665" width="16" height="22" fill="#e07060" rx="3"/>
+<!-- Person 4 -->
+<ellipse cx="860" cy="660" rx="10" ry="5" fill="#d0b080"/>
+<rect x="855" y="660" width="20" height="30" fill="#3a3a3a" rx="3"/>
+
+<!-- ══════════════════════════════════════ NPC 1: SOMMELIER (right) -->
+<!-- Body -->
+<rect x="1115" y="390" width="55" height="120" fill="#5a7030" rx="6" filter="url(#softShadow)"/>
+<!-- Jacket lapels -->
+<path d="M1128 390 L1142 420 L1128 440" fill="#8a9840" stroke="#5a7030" stroke-width="1"/>
+<path d="M1158 390 L1144 420 L1158 440" fill="#8a9840" stroke="#5a7030" stroke-width="1"/>
+<!-- Waistcoat / vest detail -->
+<rect x="1132" y="420" width="22" height="60" fill="#c8a840" rx="2"/>
+<!-- Shirt -->
+<rect x="1136" y="430" width="14" height="40" fill="#f0ead8"/>
+<!-- Head -->
+<ellipse cx="1142" cy="375" rx="28" ry="30" fill="#d4a878"/>
+<!-- Hair (dark, parted) -->
+<path d="M1115 360 Q1142 340 1170 360 Q1160 350 1142 348 Q1124 350 1115 360Z" fill="#2a1a08"/>
+<!-- Moustache -->
+<path d="M1130 385 Q1142 392 1154 385 Q1148 380 1142 382 Q1136 380 1130 385Z" fill="#2a1a08"/>
+<!-- Eyes with monocle -->
+<ellipse cx="1133" cy="372" rx="5" ry="5" fill="#f0ead8" stroke="#2a1a08" stroke-width="1"/>
+<circle cx="1133" cy="372" r="2.5" fill="#3a2818"/>
+<!-- Monocle -->
+<circle cx="1152" cy="373" r="8" fill="none" stroke="#c8a040" stroke-width="1.5"/>
+<line x1="1159" y1="380" x2="1164" y2="390" stroke="#c8a040" stroke-width="1"/>
+<!-- Nose -->
+<ellipse cx="1143" cy="380" rx="4" ry="3" fill="#c49068"/>
+<!-- Arm holding bottle -->
+<rect x="1155" y="420" width="16" height="60" fill="#5a7030" rx="4" transform="rotate(-20,1163,440)"/>
+<!-- Bottle in hand -->
+<rect x="1168" y="430" width="14" height="48" fill="#2a5020" stroke="#1a3010" stroke-width="1" rx="4"/>
+<rect x="1172" y="413" width="8" height="20" fill="#2a5020" stroke="#1a3010" stroke-width="1" rx="2"/>
+<!-- Legs -->
+<rect x="1120" y="505" width="18" height="55" fill="#3a4820" rx="4"/>
+<rect x="1148" y="505" width="18" height="55" fill="#3a4820" rx="4"/>
+<!-- Shoes -->
+<ellipse cx="1129" cy="560" rx="13" ry="6" fill="#1a0e04"/>
+<ellipse cx="1157" cy="560" rx="13" ry="6" fill="#1a0e04"/>
+
+<!-- ══════════════════════════════════════ NPC 2: YOUNG MAN (platform left) -->
+<!-- Body -->
+<rect x="370" y="440" width="50" height="100" fill="#e8d0b0" rx="5" filter="url(#softShadow)"/>
+<!-- Shirt/vest -->
+<rect x="374" y="445" width="42" height="90" fill="#d4b480" rx="4"/>
+<!-- Open shirt / waistcoat -->
+<rect x="381" y="448" width="28" height="80" fill="#c8a060" rx="3"/>
+<!-- Tie suggestion -->
+<path d="M391 452 L395 490 L399 452Z" fill="#8a3010"/>
+<!-- Head -->
+<ellipse cx="395" cy="425" rx="24" ry="26" fill="#d4a870"/>
+<!-- Hair (brown, casual) -->
+<path d="M372 418 Q395 400 418 418 Q410 405 395 402 Q380 405 372 418Z" fill="#5a3010"/>
+<path d="M372 418 Q368 425 372 432" fill="none" stroke="#5a3010" stroke-width="4"/>
+<!-- Eyes -->
+<ellipse cx="387" cy="422" rx="4" ry="4" fill="white" stroke="#2a1a08" stroke-width="1"/>
+<circle cx="387" cy="422" r="2" fill="#3a2818"/>
+<ellipse cx="403" cy="422" rx="4" ry="4" fill="white" stroke="#2a1a08" stroke-width="1"/>
+<circle cx="403" cy="422" r="2" fill="#3a2818"/>
+<!-- Nose/Mouth -->
+<ellipse cx="395" cy="429" rx="3" ry="2" fill="#c49068"/>
+<path d="M389 435 Q395 440 401 435" fill="none" stroke="#8a4828" stroke-width="1.5"/>
+<!-- Arms -->
+<rect x="325" y="450" width="48" height="14" fill="#d4b480" rx="5" transform="rotate(10,325,456)"/>
+<rect x="418" y="452" width="40" height="13" fill="#d4b480" rx="5" transform="rotate(-5,418,456)"/>
+<!-- Legs -->
+<rect x="375" y="538" width="18" height="60" fill="#4a6898" rx="4"/>
+<rect x="398" y="538" width="18" height="60" fill="#4a6898" rx="4"/>
+<ellipse cx="384" cy="598" rx="14" ry="6" fill="#2a1e10"/>
+<ellipse cx="407" cy="598" rx="14" ry="6" fill="#2a1e10"/>
+
+<!-- ════════════════════════════════════ WALKABLE AREA (dashed outline) -->
+<g fill="none" stroke="#cc88ff" stroke-width="3" stroke-dasharray="12,6" opacity="0.75">
+  <!-- Main upper platform -->
+  <path d="M75 385 L495 385 L495 615 L75 615 Z"/>
+  <!-- Main floor right side -->
+  <path d="M510 618 L1170 618 L1170 810 L510 810 Z"/>
+  <!-- Far right corridor -->
+  <path d="M1175 618 L1575 618 L1575 810 L1175 810 Z"/>
+</g>
+
+<!-- ════════════════════════════════════════════════ ACTION UI BAR -->
+<rect x="0" y="820" width="1600" height="180" fill="#4a2e14" stroke="#8a5828" stroke-width="3"/>
+<!-- Scallop top edge -->
+<path d="M0 820 Q50 805 100 820 Q150 805 200 820 Q250 805 300 820 Q350 805 400 820 Q450 805 500 820 Q550 805 600 820 Q650 805 700 820 Q750 805 800 820 Q850 805 900 820 Q950 805 1000 820 Q1050 805 1100 820 Q1150 805 1200 820 Q1250 805 1300 820 Q1350 805 1400 820 Q1450 805 1500 820 Q1550 805 1600 820" fill="#4a2e14" stroke="#8a5828" stroke-width="3"/>
+
+<!-- Verb buttons -->
+<!-- LOOK -->
+<circle cx="80" cy="890" r="56" fill="#c89040" stroke="#a07020" stroke-width="4"/>
+<circle cx="80" cy="890" r="48" fill="#d4a850" stroke="#c08030" stroke-width="2"/>
+<text x="80" y="876" text-anchor="middle" font-size="28">👁</text>
+<text x="80" y="940" text-anchor="middle" font-size="18" fill="#3a1e08" font-weight="bold">Look</text>
+
+<!-- TAKE -->
+<circle cx="210" cy="890" r="56" fill="#c89040" stroke="#a07020" stroke-width="4"/>
+<circle cx="210" cy="890" r="48" fill="#d4a850" stroke="#c08030" stroke-width="2"/>
+<text x="210" y="876" text-anchor="middle" font-size="28">✋</text>
+<text x="210" y="940" text-anchor="middle" font-size="18" fill="#3a1e08" font-weight="bold">Take</text>
+
+<!-- TALK -->
+<circle cx="340" cy="890" r="56" fill="#c89040" stroke="#a07020" stroke-width="4"/>
+<circle cx="340" cy="890" r="48" fill="#d4a850" stroke="#c08030" stroke-width="2"/>
+<text x="340" y="876" text-anchor="middle" font-size="28">💬</text>
+<text x="340" y="940" text-anchor="middle" font-size="18" fill="#3a1e08" font-weight="bold">Talk</text>
+
+<!-- USE -->
+<circle cx="470" cy="890" r="56" fill="#c89040" stroke="#a07020" stroke-width="4"/>
+<circle cx="470" cy="890" r="48" fill="#d4a850" stroke="#c08030" stroke-width="2"/>
+<text x="470" y="876" text-anchor="middle" font-size="28">⚙️</text>
+<text x="470" y="940" text-anchor="middle" font-size="18" fill="#3a1e08" font-weight="bold">Use</text>
+
+<!-- Inventory slots (5 slots, NO player portrait) -->
+<g>
+  <!-- slot 1 (empty — was mouse/player item) -->
+  <rect x="960" y="840" width="110" height="110" fill="#2a1808" stroke="#8a5828" stroke-width="3" rx="8"/>
+  <text x="1015" y="902" text-anchor="middle" font-size="30" fill="#4a3018">?</text>
+  <!-- slot 2 -->
+  <rect x="1080" y="840" width="110" height="110" fill="#2a1808" stroke="#8a5828" stroke-width="3" rx="8"/>
+  <!-- slot 3 -->
+  <rect x="1200" y="840" width="110" height="110" fill="#2a1808" stroke="#8a5828" stroke-width="3" rx="8"/>
+  <!-- slot 4 -->
+  <rect x="1320" y="840" width="110" height="110" fill="#2a1808" stroke="#8a5828" stroke-width="3" rx="8"/>
+  <!-- slot 5 — sparkle/empty -->
+  <rect x="1440" y="840" width="110" height="110" fill="#2a1808" stroke="#8a5828" stroke-width="3" rx="8"/>
+  <text x="1495" y="905" text-anchor="middle" font-size="36" fill="#c8a040">✦</text>
+</g>
+
+<!-- ════════════════════════════════════════════ ANNOTATIONS LAYER -->
+<!-- All annotations: thin colored leader lines + rounded label tags -->
+
+<!-- ─── ANNOTATION HELPER: reusable patterns via g/use not supported in all renderers, doing inline ─── -->
+
+<!-- ══ 1. EXIT / ENTER — Door ══ -->
+<line x1="800" y1="250" x2="800" y2="120" stroke="#ff4444" stroke-width="2"/>
+<line x1="800" y1="120" x2="1010" y2="120" stroke="#ff4444" stroke-width="2"/>
+<circle cx="800" cy="250" r="4" fill="#ff4444"/>
+<rect x="1012" y="104" width="200" height="32" fill="#ff4444" rx="10"/>
+<text x="1112" y="124" text-anchor="middle" font-size="15" fill="white" font-weight="bold" font-family="monospace">EXIT / ENTER</text>
+
+<!-- ══ 2. PICKUP — Glowing bottle ══ -->
+<line x1="1490" y1="380" x2="1490" y2="260" stroke="#44dd44" stroke-width="2"/>
+<line x1="1490" y1="260" x2="1310" y2="260" stroke="#44dd44" stroke-width="2"/>
+<circle cx="1490" cy="380" r="4" fill="#44dd44"/>
+<rect x="1100" y="244" width="208" height="32" fill="#44dd44" rx="10"/>
+<text x="1204" y="264" text-anchor="middle" font-size="15" fill="white" font-weight="bold" font-family="monospace">PICKUP GLOWING BOTTLE</text>
+
+<!-- ══ 3. TALK NPC — Sommelier ══ -->
+<line x1="1142" y1="360" x2="1142" y2="220" stroke="#44aaff" stroke-width="2"/>
+<line x1="1142" y1="220" x2="990" y2="220" stroke="#44aaff" stroke-width="2"/>
+<circle cx="1142" cy="360" r="4" fill="#44aaff"/>
+<rect x="790" y="204" width="198" height="32" fill="#44aaff" rx="10"/>
+<text x="889" y="224" text-anchor="middle" font-size="15" fill="white" font-weight="bold" font-family="monospace">TALK NPC: SOMMELIER</text>
+
+<!-- ══ 4. GIVE bottle TO NPC — Sommelier ══ -->
+<line x1="1142" y1="450" x2="1300" y2="450" stroke="#ff9922" stroke-width="2"/>
+<line x1="1300" y1="450" x2="1300" y2="560" stroke="#ff9922" stroke-width="2"/>
+<circle cx="1142" cy="450" r="4" fill="#ff9922"/>
+<rect x="1302" y="544" width="222" height="32" fill="#ff9922" rx="10"/>
+<text x="1413" y="564" text-anchor="middle" font-size="15" fill="white" font-weight="bold" font-family="monospace">GIVE [BOTTLE] TO NPC</text>
+
+<!-- ══ 5. TALK NPC — Young Man ══ -->
+<line x1="395" y1="400" x2="395" y2="320" stroke="#44aaff" stroke-width="2"/>
+<line x1="395" y1="320" x2="176" y2="320" stroke="#44aaff" stroke-width="2"/>
+<circle cx="395" cy="400" r="4" fill="#44aaff"/>
+<rect x="-10" y="304" width="185" height="32" fill="#44aaff" rx="10"/>
+<text x="83" y="324" text-anchor="middle" font-size="15" fill="white" font-weight="bold" font-family="monospace">TALK NPC: GUIDE</text>
+
+<!-- ══ 6. USE corkscrew ON [item] ══ -->
+<line x1="230" y1="480" x2="90" y2="480" stroke="#ffdd22" stroke-width="2"/>
+<line x1="90" y1="480" x2="90" y2="340" stroke="#ffdd22" stroke-width="2"/>
+<circle cx="230" cy="480" r="4" fill="#ffdd22"/>
+<rect x="-10" y="324" width="200" height="32" fill="#ffdd22" rx="10"/>
+<text x="90" y="344" text-anchor="middle" font-size="15" fill="#1a1a00" font-weight="bold" font-family="monospace">USE CORKSCREW ON [?]</text>
+
+<!-- ══ 7. WALKABLE AREA label ══ -->
+<!-- Platform -->
+<line x1="285" y1="520" x2="100" y2="750" stroke="#cc88ff" stroke-width="2" stroke-dasharray="4,3"/>
+<circle cx="285" cy="520" r="4" fill="#cc88ff"/>
+<rect x="0" y="735" width="200" height="32" fill="#cc88ff" rx="10"/>
+<text x="100" y="755" text-anchor="middle" font-size="15" fill="white" font-weight="bold" font-family="monospace">WALKABLE AREA</text>
+
+<!-- Floor walkable -->
+<line x1="900" y1="700" x2="900" y2="780" stroke="#cc88ff" stroke-width="2" stroke-dasharray="4,3"/>
+<circle cx="900" cy="700" r="4" fill="#cc88ff"/>
+<rect x="800" y="780" width="200" height="32" fill="#cc88ff" rx="10"/>
+<text x="900" y="800" text-anchor="middle" font-size="15" fill="white" font-weight="bold" font-family="monospace">WALKABLE AREA</text>
+
+<!-- ══ 8. Glass pit — non-walkable / LOOK trigger ══ -->
+<line x1="780" y1="560" x2="620" y2="560" stroke="#ff8888" stroke-width="2" stroke-dasharray="6,3"/>
+<line x1="620" y1="560" x2="510" y2="748" stroke="#ff8888" stroke-width="2" stroke-dasharray="6,3"/>
+<circle cx="780" cy="560" r="4" fill="#ff8888"/>
+<rect x="402" y="732" width="220" height="32" fill="#ff4444" rx="10" opacity="0.85"/>
+<text x="512" y="752" text-anchor="middle" font-size="15" fill="white" font-weight="bold" font-family="monospace">LOOK: PIT BELOW (NON-WALK)</text>
+
+<!-- ══ 9. NPC Player portrait REMOVED note ══ -->
+<line x1="960" y1="895" x2="840" y2="820" stroke="#888888" stroke-width="2" stroke-dasharray="5,4"/>
+<circle cx="960" cy="895" r="4" fill="#888"/>
+<rect x="630" y="804" width="208" height="32" fill="#555555" rx="10"/>
+<text x="734" y="824" text-anchor="middle" font-size="15" fill="#dddddd" font-weight="bold" font-family="monospace">PLAYER PORTRAIT REMOVED</text>
+
+<!-- ══ LEGEND ══ -->
+<rect x="558" y="828" width="390" height="148" fill="#1a0e06" rx="10" stroke="#8a5828" stroke-width="2" opacity="0.92"/>
+<text x="753" y="851" text-anchor="middle" font-size="13" fill="#c8a040" font-weight="bold" font-family="monospace">ANNOTATION LEGEND</text>
+<g font-family="monospace" font-size="12">
+  <rect x="572" y="858" width="18" height="12" fill="#ff4444" rx="3"/>
+  <text x="596" y="869" fill="#eee">EXIT / ENTER</text>
+  <rect x="572" y="876" width="18" height="12" fill="#44aaff" rx="3"/>
+  <text x="596" y="887" fill="#eee">TALK NPC</text>
+  <rect x="572" y="894" width="18" height="12" fill="#44dd44" rx="3"/>
+  <text x="596" y="905" fill="#eee">PICKUP item</text>
+  <rect x="572" y="912" width="18" height="12" fill="#ff9922" rx="3"/>
+  <text x="596" y="923" fill="#eee">GIVE [item] TO NPC</text>
+  <rect x="572" y="930" width="18" height="12" fill="#ffdd22" rx="3"/>
+  <text x="596" y="941" fill="#1a1a00">USE [item] ON prop</text>
+  <rect x="572" y="948" width="18" height="12" fill="#cc88ff" rx="3"/>
+  <text x="596" y="959" fill="#eee">WALKABLE AREA</text>
+
+  <rect x="750" y="858" width="18" height="12" fill="#ff4444" rx="3" opacity="0.7"/>
+  <text x="774" y="869" fill="#eee">NON-WALK / LOOK trigger</text>
+  <rect x="750" y="876" width="18" height="12" fill="#555" rx="3"/>
+  <text x="774" y="887" fill="#aaa">UI note (removed)</text>
+</g>
+
+<!-- ══ SCENE TITLE LABEL ══ -->
+<rect x="560" y="10" width="480" height="40" fill="#1a0e06" rx="8" opacity="0.85"/>
+<text x="800" y="36" text-anchor="middle" font-size="20" fill="#c8a040" font-weight="bold" font-family="monospace">SCENE: WINE CELLAR — UPPER FLOOR</text>
+
+</svg>
+</body>
+</html>
