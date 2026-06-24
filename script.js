@@ -25,12 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const lowerBgTex = texLoader.load('Gemini_Generated_Image_njysn4njysn4njys.png');
     scene3d.background = upperBgTex;
 
-    // ── Scene lighting (scene-level so always active) ─────
-    scene3d.add(new THREE.AmbientLight(0xc8843a, 0.8));
-    const dirLight = new THREE.DirectionalLight(0xffcc88, 0.6);
-    dirLight.position.set(5, 14, 8);
-    scene3d.add(dirLight);
-
     // ── Floor groups ──────────────────────────────────────
     const upperGroup = new THREE.Group();
     const lowerGroup = new THREE.Group();
@@ -38,34 +32,21 @@ document.addEventListener("DOMContentLoaded", () => {
     scene3d.add(lowerGroup);
     lowerGroup.visible = false;
 
-    // ── Upper floor geometry ──────────────────────────────
-    (function buildUpperFloor() {
-        // Transparent walkable floor — just geometry for raycasting / depth
-        const floorGeo = new THREE.PlaneGeometry(80, 60);
-        const floorMat = new THREE.MeshBasicMaterial({ color: 0x2a1005, transparent: true, opacity: 0.0 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = 0;
-        upperGroup.add(floor);
+    // Floors are invisible — background image provides all visuals.
+    // We only need a flat plane for click-to-walk raycasting.
+    const walkPlaneUpper = new THREE.Mesh(
+        new THREE.PlaneGeometry(120, 100),
+        new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide })
+    );
+    walkPlaneUpper.rotation.x = -Math.PI / 2;
+    upperGroup.add(walkPlaneUpper);
 
-        // Pit opening — dark ellipse on floor
-        const pitGeo = new THREE.CircleGeometry(9, 48);
-        const pitMat = new THREE.MeshBasicMaterial({ color: 0x050202 });
-        const pit = new THREE.Mesh(pitGeo, pitMat);
-        pit.rotation.x = -Math.PI / 2;
-        pit.position.set(0, 0.01, 4);
-        upperGroup.add(pit);
-    })();
-
-    // ── Lower floor geometry ──────────────────────────────
-    (function buildLowerFloor() {
-        const floorGeo = new THREE.PlaneGeometry(80, 60);
-        const floorMat = new THREE.MeshBasicMaterial({ color: 0x100804, transparent: true, opacity: 0.0 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = 0;
-        lowerGroup.add(floor);
-    })();
+    const walkPlaneLower = new THREE.Mesh(
+        new THREE.PlaneGeometry(120, 100),
+        new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide })
+    );
+    walkPlaneLower.rotation.x = -Math.PI / 2;
+    lowerGroup.add(walkPlaneLower);
 
     // ── Player group (invisible geometry — just a position anchor) ──
     const playerGroup = new THREE.Group();
