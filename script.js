@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── Player group (invisible geometry — just a position anchor) ──
     const playerGroup = new THREE.Group();
-    playerGroup.position.set(0, 0, 4);
+    playerGroup.position.set(0, 0, 12);
     scene3d.add(playerGroup);
 
     // ════════════════════════════════════════════════════════
@@ -82,26 +82,17 @@ document.addEventListener("DOMContentLoaded", () => {
     //  CAMERA — spherical orbit with smooth follow
     // ════════════════════════════════════════════════════════
     const sph = { theta: 0, phi: 1.05, r: 20 };
-    const CAM_K = 4.5;
-    let camBase = new THREE.Vector3();
-    camBase.copy(playerGroup.position);
+    // Fixed camera — orbits a static scene centre so the avatar moves around the background
+    const SCENE_CENTER = new THREE.Vector3(0, 0, -2);
 
     function updateCamera(dt) {
-        // Smooth follow: exponential lerp toward player
-        const alpha = 1 - Math.exp(-CAM_K * dt);
-        camBase.lerp(playerGroup.position, alpha);
-
-        // Look-ahead: nudge camera toward movement direction
-        const lookAhead = moveDir.clone().multiplyScalar(3.5);
-        const target = camBase.clone().add(lookAhead);
-
-        // Spherical orbit from base
-        const cx = target.x + sph.r * Math.sin(sph.phi) * Math.sin(sph.theta);
-        const cy = target.y + sph.r * Math.cos(sph.phi);
-        const cz = target.z + sph.r * Math.sin(sph.phi) * Math.cos(sph.theta);
-
+        // Camera is anchored to scene centre — NOT following the player.
+        // This is what makes the avatar visually walk around the background image.
+        const cx = SCENE_CENTER.x + sph.r * Math.sin(sph.phi) * Math.sin(sph.theta);
+        const cy = SCENE_CENTER.y + sph.r * Math.cos(sph.phi);
+        const cz = SCENE_CENTER.z + sph.r * Math.sin(sph.phi) * Math.cos(sph.theta);
         camera.position.set(cx, cy, cz);
-        camera.lookAt(target.x, target.y + 1.2, target.z);
+        camera.lookAt(SCENE_CENTER.x, SCENE_CENTER.y + 1.2, SCENE_CENTER.z);
     }
 
     // ════════════════════════════════════════════════════════
@@ -141,13 +132,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? { minX:-28, maxX:28, minZ:-30, maxZ:18 }
                 : { minX:-25, maxX:25, minZ:-18, maxZ:16 };
 
-            // Pit exclusion on upper floor
+            // Pit exclusion on upper floor — push player back if entering pit
             if (currentScene === 'upper') {
+                newPos.x = Math.max(bounds.minX, Math.min(bounds.maxX, newPos.x));
+                newPos.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, newPos.z));
                 const inPit = Math.hypot(newPos.x / 9, (newPos.z - 4) / 9) < 1;
                 if (!inPit) {
-                    newPos.x = Math.max(bounds.minX, Math.min(bounds.maxX, newPos.x));
-                    newPos.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, newPos.z));
                     playerGroup.position.copy(newPos);
+                } else {
+                    // Push back toward player's current position (don't freeze them)
+                    const fromPitX = playerGroup.position.x - 0;
+                    const fromPitZ = playerGroup.position.z - 4;
+                    const dist = Math.hypot(fromPitX, fromPitZ) || 1;
+                    playerGroup.position.x += (fromPitX / dist) * 0.2;
+                    playerGroup.position.z += (fromPitZ / dist) * 0.2;
                 }
             } else {
                 newPos.x = Math.max(bounds.minX, Math.min(bounds.maxX, newPos.x));
@@ -577,7 +575,6 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 playerGroup.position.set(0, 0, 8);
             }
-            camBase.copy(playerGroup.position);
 
             closeAllPanels();
             hideZoneBanner();
