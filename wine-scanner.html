@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BL Wine Scanner</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: #0d0608;
+            color: #e8d5b7;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            color: #c8963c;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: #8a6a4a;
+            text-align: center;
+            margin-bottom: 28px;
+            font-style: italic;
+        }
+
+        /* ── Upload zone ── */
+        #drop-zone {
+            width: 100%;
+            max-width: 480px;
+            border: 2px dashed #5a3a1a;
+            border-radius: 16px;
+            padding: 36px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            background: rgba(255,255,255,0.02);
+            position: relative;
+        }
+
+        #drop-zone:hover, #drop-zone.drag-over {
+            border-color: #c8963c;
+            background: rgba(200,150,60,0.06);
+        }
+
+        #drop-zone .drop-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        #drop-zone p { color: #8a6a4a; font-size: 0.9rem; line-height: 1.5; }
+        #drop-zone strong { color: #c8963c; }
+
+        #file-input { display: none; }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #3a1a08;
+            border: 1px solid #5a3a1a;
+            color: #e8d5b7;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.88rem;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        button:hover { background: #5a2a10; border-color: #c8963c; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        #btn-camera { font-size: 1.1rem; }
+
+        /* ── Preview ── */
+        #preview-wrap {
+            width: 100%;
+            max-width: 480px;
+            margin-top: 16px;
+            display: none;
+            position: relative;
+        }
+        #preview-wrap img {
+            width: 100%;
+            max-height: 280px;
+            object-fit: contain;
+            border-radius: 12px;
+            border: 1px solid #3a1a08;
+        }
+        #btn-clear {
+            position: absolute;
+            top: 8px; right: 8px;
+            background: rgba(0,0,0,0.7);
+            border-color: #5a3a1a;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+        }
+
+        /* ── Analyse button ── */
+        #btn-analyse {
+            width: 100%;
+            max-width: 480px;
+            margin-top: 14px;
+            padding: 14px;
+            font-size: 1rem;
+            background: linear-gradient(135deg, #7a3a10, #c8963c);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: bold;
+            letter-spacing: 0.04em;
+            display: none;
+        }
+        #btn-analyse:hover:not(:disabled) {
+            background: linear-gradient(135deg, #9a4a14, #e0aa50);
+        }
+
+        /* ── API key field ── */
+        #api-key-wrap {
+            width: 100%;
+            max-width: 480px;
+            margin-top: 10px;
+            display: none;
+        }
+        #api-key-wrap label { font-size: 0.78rem; color: #8a6a4a; display: block; margin-bottom: 4px; }
+        #api-key-input {
+            width: 100%;
+            background: #1a0c06;
+            border: 1px solid #3a1a08;
+            border-radius: 8px;
+            color: #e8d5b7;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            font-family: monospace;
+        }
+        #api-key-input:focus { outline: none; border-color: #c8963c; }
+
+        /* ── Spinner ── */
+        #spinner {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            margin-top: 28px;
+            width: 100%;
+            max-width: 480px;
+        }
+        .spin-ring {
+            width: 48px; height: 48px;
+            border: 4px solid #3a1a08;
+            border-top-color: #c8963c;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #spinner p { color: #8a6a4a; font-size: 0.88rem; font-style: italic; }
+
+        /* ── Error ── */
+        #error-box {
+            display: none;
+            width: 100%;
+            max-width: 480px;
+            margin-top: 16px;
+            background: rgba(180,40,20,0.15);
+            border: 1px solid #8a2a1a;
+            border-radius: 10px;
+            padding: 14px 16px;
+            color: #e07060;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        /* ── Wine card ── */
+        #wine-card {
+            display: none;
+            width: 100%;
+            max-width: 480px;
+            margin-top: 24px;
+            background: linear-gradient(160deg, #1a0c06 0%, #120804 100%);
+            border: 1px solid #5a3a1a;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #3a1a08, #5a2a10);
+            padding: 20px 20px 16px;
+            position: relative;
+        }
+        .card-score-badge {
+            position: absolute;
+            top: 16px; right: 16px;
+            width: 58px; height: 58px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 35%, #e0aa50, #a06820);
+            border: 2px solid rgba(255,255,255,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .score-num { font-size: 1.3rem; font-weight: bold; color: #fff; line-height: 1; }
+        .score-label { font-size: 0.5rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .card-wine-name { font-size: 1.25rem; color: #e8d5b7; font-weight: bold; padding-right: 70px; }
+        .card-producer { font-size: 0.85rem; color: #c8963c; margin-top: 3px; }
+        .card-meta { font-size: 0.78rem; color: #8a6a4a; margin-top: 6px; }
+
+        .card-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+        .card-section-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #c8963c;
+            margin-bottom: 5px;
+        }
+
+        .card-tasting { font-size: 0.88rem; color: #d4b896; line-height: 1.6; font-style: italic; }
+
+        .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .tag {
+            background: rgba(200,150,60,0.12);
+            border: 1px solid rgba(200,150,60,0.3);
+            color: #c8963c;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.75rem;
+        }
+        .tag.food { background: rgba(80,160,80,0.1); border-color: rgba(80,160,80,0.3); color: #80c080; }
+
+        .card-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .detail-item { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px 12px; }
+        .detail-key { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: #8a6a4a; margin-bottom: 3px; }
+        .detail-val { font-size: 0.88rem; color: #e8d5b7; }
+
+        .confidence-bar {
+            height: 4px;
+            background: #2a1208;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #7a3a10, #c8963c);
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+        .confidence-label { font-size: 0.72rem; color: #8a6a4a; margin-top: 4px; }
+
+        #btn-scan-again {
+            width: 100%;
+            margin-top: 16px;
+            background: transparent;
+            border-color: #5a3a1a;
+            color: #c8963c;
+        }
+    </style>
+</head>
+<body>
+    <h1>🍷 BL Wine Scanner</h1>
+    <p class="subtitle">Point, shoot, and discover what's in your glass</p>
+
+    <div id="drop-zone">
+        <div class="drop-icon">📷</div>
+        <p>Drop a wine label photo here<br>or <strong>click to choose a file</strong></p>
+        <input type="file" id="file-input" accept="image/*" capture="environment">
+    </div>
+
+    <div class="btn-row">
+        <button id="btn-camera">📷 Take Photo</button>
+        <button id="btn-file">📁 Choose File</button>
+    </div>
+
+    <div id="api-key-wrap">
+        <label for="api-key-input">Anthropic API Key (sk-ant-…)</label>
+        <input type="password" id="api-key-input" placeholder="sk-ant-api03-…" autocomplete="off">
+    </div>
+
+    <div id="preview-wrap">
+        <img id="preview-img" alt="Wine label preview">
+        <button id="btn-clear">✕ Clear</button>
+    </div>
+
+    <button id="btn-analyse">Analyse Wine Label</button>
+
+    <div id="spinner">
+        <div class="spin-ring"></div>
+        <p>Consulting the sommelier…</p>
+    </div>
+
+    <div id="error-box"></div>
+
+    <div id="wine-card">
+        <div class="card-header">
+            <div class="card-score-badge">
+                <span class="score-num" id="card-score">—</span>
+                <span class="score-label">Score</span>
+            </div>
+            <div class="card-wine-name" id="card-name">—</div>
+            <div class="card-producer" id="card-producer">—</div>
+            <div class="card-meta" id="card-meta">—</div>
+        </div>
+        <div class="card-body">
+            <div>
+                <div class="card-section-label">Tasting Notes</div>
+                <div class="card-tasting" id="card-tasting">—</div>
+            </div>
+            <div>
+                <div class="card-section-label">Flavour Profile</div>
+                <div class="tag-row" id="card-flavours"></div>
+            </div>
+            <div>
+                <div class="card-section-label">Food Pairings</div>
+                <div class="tag-row" id="card-pairings"></div>
+            </div>
+            <div class="card-details">
+                <div class="detail-item">
+                    <div class="detail-key">ABV</div>
+                    <div class="detail-val" id="card-abv">—</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-key">Serve Temp</div>
+                    <div class="detail-val" id="card-temp">—</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-key">Decant</div>
+                    <div class="detail-val" id="card-decant">—</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-key">Cellar Potential</div>
+                    <div class="detail-val" id="card-cellar">—</div>
+                </div>
+            </div>
+            <div>
+                <div class="card-section-label">Confidence</div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidence-fill" style="width:0%"></div>
+                </div>
+                <div class="confidence-label" id="confidence-label">—</div>
+            </div>
+        </div>
+    </div>
+
+    <button id="btn-scan-again" style="display:none; max-width:480px; width:100%;">Scan Another Wine</button>
+
+    <script>
+        const dropZone    = document.getElementById('drop-zone');
+        const fileInput   = document.getElementById('file-input');
+        const previewWrap = document.getElementById('preview-wrap');
+        const previewImg  = document.getElementById('preview-img');
+        const btnClear    = document.getElementById('btn-clear');
+        const btnAnalyse  = document.getElementById('btn-analyse');
+        const btnCamera   = document.getElementById('btn-camera');
+        const btnFile     = document.getElementById('btn-file');
+        const apiKeyWrap  = document.getElementById('api-key-wrap');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const spinner     = document.getElementById('spinner');
+        const errorBox    = document.getElementById('error-box');
+        const wineCard    = document.getElementById('wine-card');
+        const btnScanAgain = document.getElementById('btn-scan-again');
+
+        let imageBase64 = null;
+        let imageMime   = 'image/jpeg';
+
+        function escapeHtml(str) {
+            if (typeof str !== 'string') str = String(str ?? '');
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function showPreview(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const dataUrl = e.target.result;
+                imageMime = file.type || 'image/jpeg';
+                imageBase64 = dataUrl.split(',')[1];
+                previewImg.src = dataUrl;
+                previewWrap.style.display = 'block';
+                btnAnalyse.style.display = 'block';
+                apiKeyWrap.style.display = 'block';
+                errorBox.style.display = 'none';
+                wineCard.style.display = 'none';
+                btnScanAgain.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        btnFile.addEventListener('click', () => {
+            fileInput.removeAttribute('capture');
+            fileInput.click();
+        });
+        btnCamera.addEventListener('click', () => {
+            fileInput.setAttribute('capture', 'environment');
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', e => {
+            if (e.target.files[0]) showPreview(e.target.files[0]);
+        });
+
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files[0]) showPreview(e.dataTransfer.files[0]);
+        });
+
+        btnClear.addEventListener('click', () => {
+            imageBase64 = null;
+            previewWrap.style.display = 'none';
+            btnAnalyse.style.display = 'none';
+            fileInput.value = '';
+        });
+
+        btnAnalyse.addEventListener('click', analyseLabel);
+        btnScanAgain.addEventListener('click', resetScanner);
+
+        async function analyseLabel() {
+            if (!imageBase64) return;
+
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                showError('Please enter your Anthropic API key to continue.');
+                return;
+            }
+
+            btnAnalyse.disabled = true;
+            spinner.style.display = 'flex';
+            errorBox.style.display = 'none';
+            wineCard.style.display = 'none';
+            btnScanAgain.style.display = 'none';
+
+            const systemPrompt = `You are an expert sommelier and wine analyst. When given an image of a wine label or bottle, analyse it and return ONLY a JSON object with these exact fields:
+{
+  "wine_name": "string",
+  "producer": "string",
+  "region": "string — country, region, appellation",
+  "vintage": "string or null",
+  "grape_varieties": ["array", "of", "grape", "names"],
+  "wine_type": "Red | White | Rosé | Sparkling | Dessert | Fortified",
+  "abv": "string e.g. 13.5%",
+  "score": number 50-100,
+  "score_label": "string e.g. Excellent | Very Good | Good | Decent",
+  "tasting_notes": "string — 2-3 sentences of descriptive tasting notes",
+  "flavour_tags": ["array", "of", "5-8", "flavour", "descriptors"],
+  "food_pairings": ["array", "of", "3-5", "food", "suggestions"],
+  "serve_temp": "string e.g. 16-18°C",
+  "decant": "Yes | No | Optional",
+  "cellar_potential": "string e.g. Drink now | 2-5 years | 5-10 years",
+  "price_range": "string e.g. £10-15",
+  "confidence": number 0-100
+}
+Return ONLY the JSON. No markdown, no explanation.`;
+
+            try {
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-6',
+                        max_tokens: 1024,
+                        system: systemPrompt,
+                        messages: [{
+                            role: 'user',
+                            content: [{
+                                type: 'image',
+                                source: {
+                                    type: 'base64',
+                                    media_type: imageMime,
+                                    data: imageBase64
+                                }
+                            }, {
+                                type: 'text',
+                                text: 'Please analyse this wine label and return the JSON profile.'
+                            }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.error?.message || `API error ${response.status}`);
+                }
+
+                const data = await response.json();
+                const rawText = data.content?.[0]?.text ?? '';
+
+                let wine;
+                try {
+                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                    wine = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+                } catch {
+                    throw new Error('Could not parse wine profile from response. Please try again.');
+                }
+
+                renderWineCard(wine);
+
+            } catch (err) {
+                showError(escapeHtml(err.message));
+            } finally {
+                spinner.style.display = 'none';
+                btnAnalyse.disabled = false;
+            }
+        }
+
+        function renderWineCard(w) {
+            document.getElementById('card-name').textContent = w.wine_name ?? 'Unknown Wine';
+            document.getElementById('card-producer').textContent = w.producer ?? '';
+
+            const metaParts = [w.region, w.vintage, w.wine_type].filter(Boolean);
+            if (w.grape_varieties?.length) metaParts.push(w.grape_varieties.join(', '));
+            document.getElementById('card-meta').textContent = metaParts.join(' · ');
+
+            document.getElementById('card-score').textContent = w.score ?? '—';
+            document.getElementById('card-tasting').textContent = w.tasting_notes ?? '';
+            document.getElementById('card-abv').textContent = w.abv ?? '—';
+            document.getElementById('card-temp').textContent = w.serve_temp ?? '—';
+            document.getElementById('card-decant').textContent = w.decant ?? '—';
+            document.getElementById('card-cellar').textContent = w.cellar_potential ?? '—';
+
+            const flavourRow = document.getElementById('card-flavours');
+            flavourRow.innerHTML = '';
+            (w.flavour_tags ?? []).forEach(tag => {
+                const el = document.createElement('span');
+                el.className = 'tag';
+                el.textContent = escapeHtml(tag);
+                flavourRow.appendChild(el);
+            });
+
+            const pairingRow = document.getElementById('card-pairings');
+            pairingRow.innerHTML = '';
+            (w.food_pairings ?? []).forEach(p => {
+                const el = document.createElement('span');
+                el.className = 'tag food';
+                el.textContent = escapeHtml(p);
+                pairingRow.appendChild(el);
+            });
+
+            const conf = typeof w.confidence === 'number' ? w.confidence : 0;
+            document.getElementById('confidence-fill').style.width = conf + '%';
+            document.getElementById('confidence-label').textContent =
+                `${conf}% confidence — ${w.score_label ?? ''}${w.price_range ? ' · Est. ' + escapeHtml(w.price_range) : ''}`;
+
+            wineCard.style.display = 'block';
+            btnScanAgain.style.display = 'block';
+            wineCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function showError(msg) {
+            errorBox.innerHTML = '⚠️ ' + msg;
+            errorBox.style.display = 'block';
+        }
+
+        function resetScanner() {
+            imageBase64 = null;
+            fileInput.value = '';
+            previewWrap.style.display = 'none';
+            btnAnalyse.style.display = 'none';
+            wineCard.style.display = 'none';
+            btnScanAgain.style.display = 'none';
+            errorBox.style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

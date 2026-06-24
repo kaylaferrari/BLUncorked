@@ -241,6 +241,35 @@ body {
     text-shadow: 0 0 8px rgba(255,220,80,0.8);
 }
 
+#btn-scan-wine {
+    background: linear-gradient(135deg, #5a2a10, #9a5820);
+    border: 1px solid #c8963c;
+    color: #f5e8c8;
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-family: 'Georgia', serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+    margin-left: 8px;
+}
+#btn-scan-wine:hover {
+    background: linear-gradient(135deg, #7a3a14, #c8963c);
+}
+
+/* Scanner panel — taller than standard panels */
+#scanner-panel {
+    width: min(520px, 95%);
+    max-height: 88%;
+    overflow: hidden;
+}
+#scanner-panel .panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
 /* ═══════════════════ DIALOGUE BOX (ambient) ═══════════════════ */
 #dialogue-box {
     position: absolute;

@@ -108,7 +108,7 @@
                 <div class="slot" id="slot-2"></div>
                 <div class="slot" id="slot-3"></div>
                 <div class="slot" id="slot-4"></div>
-                <div class="ui-decor">✨</div>
+                <button id="btn-scan-wine" title="Scan a wine label">🍷 Scan Wine</button>
             </div>
         </div>
 
@@ -134,6 +134,20 @@
                 <button class="panel-close" data-panel="zone-panel">✕</button>
             </div>
             <div id="zone-panel-body"></div>
+        </div>
+
+        <!-- ═══ WINE SCANNER PANEL ═══ -->
+        <div id="scanner-panel" class="panel hidden">
+            <div class="panel-header">
+                <span class="panel-avatar">🍷</span>
+                <span>Wine Scanner</span>
+                <button class="panel-close" data-panel="scanner-panel">✕</button>
+            </div>
+            <div id="scanner-panel-body">
+                <iframe id="scanner-frame" src="wine-scanner.html" frameborder="0"
+                        style="width:100%;height:520px;border:none;border-radius:0 0 12px 12px;background:#0d0608;">
+                </iframe>
+            </div>
         </div>
 
         <!-- ═══ SCENE TRANSITION OVERLAY ═══ -->

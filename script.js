@@ -267,6 +267,18 @@ document.addEventListener("DOMContentLoaded", () => {
     btnUp.addEventListener('click', () => goToScene('upper'));
     btnDown.addEventListener('click', () => goToScene('lower'));
 
+    // Wine Scanner
+    const btnScanWine   = document.getElementById('btn-scan-wine');
+    const scannerPanel  = document.getElementById('scanner-panel');
+    btnScanWine.addEventListener('click', () => {
+        if (scannerPanel.classList.contains('hidden')) {
+            closeAllPanels();
+            scannerPanel.classList.remove('hidden');
+        } else {
+            scannerPanel.classList.add('hidden');
+        }
+    });
+
     // ══════════════════════════════════════════════════════
     //  VERB BUTTONS
     // ══════════════════════════════════════════════════════
