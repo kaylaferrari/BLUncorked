@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wine Cellar - Point & Click Adventure</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-wrapper">
+        <div id="game-scene">
+            <div id="background-image"></div>
+
+            <div class="hotspot prop" id="prop-corkscrew" style="top: 24%; left: 24%; width: 7%; height: 18%;" data-target="Giant Corkscrew"></div>
+            <div class="hotspot exit" id="door-exit" style="top: 20%; left: 59%; width: 10%; height: 20%;" data-target="Double Doors"></div>
+            <div class="hotspot npc" id="npc-sommelier" style="top: 26%; left: 74%; width: 8%; height: 24%;" data-target="Sommelier"></div>
+            <div class="hotspot item" id="item-bottle" style="top: 32%; left: 86%; width: 5%; height: 15%;" data-target="Glowing Bottle"></div>
+            <div class="hotspot prop" id="prop-pit" style="top: 50%; left: 20%; width: 60%; height: 32%; border-radius: 50%;" data-target="Lower Cellar"></div>
+        </div>
+
+        <div id="ui-bar">
+            <div class="action-buttons">
+                <button id="btn-look" class="active">Look</button>
+                <button id="btn-take">Take</button>
+                <button id="btn-talk">Talk</button>
+                <button id="btn-use">Use</button>
+            </div>
+
+            <div class="inventory-slots">
+                <div class="slot" id="slot-0"></div>
+                <div class="slot" id="slot-1"></div>
+                <div class="slot" id="slot-2"></div>
+                <div class="slot" id="slot-3"></div>
+                <div class="slot" id="slot-4"></div>
+                <div class="ui-decor">✨</div>
+            </div>
+        </div>
+
+        <div id="dialogue-box">Welcome to the Cellar...</div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
