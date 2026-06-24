@@ -28,6 +28,48 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnUp           = document.getElementById('btn-up');
     const btnDown         = document.getElementById('btn-down');
     const avatar          = document.getElementById('player-avatar');
+    const avatarVideo     = document.getElementById('avatar-video');
+
+    // ══════════════════════════════════════════════════════
+    //  AVATAR ANIMATION STATE MACHINE
+    //  Video segments (24fps, 10s total):
+    //    idle    → 0.0 – 1.5s  (standing, front)
+    //    walking → 2.5 – 5.0s  (walk cycle)
+    //    talking → 9.0 – 10.0s (both-hands talk gesture)
+    // ══════════════════════════════════════════════════════
+    const AVATAR_SEGS = {
+        idle:    { start: 0.0,  end: 1.5  },
+        walking: { start: 2.5,  end: 5.0  },
+        talking: { start: 9.0,  end: 10.0 },
+    };
+
+    let avatarAnimState = 'idle';
+    let walkTimer       = null;
+
+    function setAvatarState(state) {
+        if (avatarAnimState === state) return;
+        avatarAnimState = state;
+        avatar.setAttribute('data-state', state);
+        const seg = AVATAR_SEGS[state];
+        if (!seg) return;
+        avatarVideo.currentTime = seg.start;
+        avatarVideo.play().catch(() => {});
+    }
+
+    // Loop within the active segment via timeupdate
+    avatarVideo.addEventListener('timeupdate', () => {
+        const seg = AVATAR_SEGS[avatarAnimState];
+        if (!seg) return;
+        if (avatarVideo.currentTime >= seg.end) {
+            avatarVideo.currentTime = seg.start;
+        }
+    });
+
+    // Kick off idle on load
+    avatarVideo.addEventListener('canplay', () => {
+        avatarVideo.currentTime = AVATAR_SEGS.idle.start;
+        avatarVideo.play().catch(() => {});
+    }, { once: true });
 
     // ══════════════════════════════════════════════════════
     //  ZONE CONTENT
@@ -200,11 +242,19 @@ document.addEventListener("DOMContentLoaded", () => {
         avatar.style.left      = xPct + '%';
         avatar.style.top       = yPct + '%';
         avatar.style.transform = 'translateX(-50%)';
+
+        // Trigger walk animation while moving, switch back to idle on arrival
+        setAvatarState('walking');
+        clearTimeout(walkTimer);
+        // CSS transition is 0.55s — return to idle shortly after
+        walkTimer = setTimeout(() => setAvatarState('idle'), 600);
     }
 
     function placeAvatar(xPct, yPct) {
         avatarX = xPct;
         avatarY = yPct;
+        clearTimeout(walkTimer);
+        setAvatarState('idle');
         // Instant reposition (no transition) — used on scene switch
         avatar.style.transition = 'none';
         avatar.style.left       = xPct + '%';
@@ -362,6 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ══════════════════════════════════════════════════════
     function openDialogue(npcName) {
         closeAllPanels();
+        setAvatarState('talking');
         if (npcName === 'Sommelier') {
             showDialogueNode('start');
         } else {
@@ -427,6 +478,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function closeAllPanels() {
         document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+        // Return to idle unless currently walking
+        if (avatarAnimState === 'talking') setAvatarState('idle');
     }
 
     // ══════════════════════════════════════════════════════

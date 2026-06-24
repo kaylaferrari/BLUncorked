@@ -81,8 +81,11 @@
                  data-scene="lower" data-zone="vintage" data-label="The Vintage Wall"></div>
 
             <!-- ── PLAYER AVATAR ── -->
-            <div id="player-avatar" data-facing="right">
-                <div class="avatar-body"></div>
+            <div id="player-avatar" data-facing="right" data-state="idle">
+                <div id="avatar-frame">
+                    <video id="avatar-video" src="I_need_the_young_man_avatar_st.mp4"
+                           muted playsinline preload="auto"></video>
+                </div>
                 <div class="avatar-label">You</div>
             </div>
         </div>

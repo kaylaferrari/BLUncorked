@@ -471,14 +471,32 @@ body {
     transition: left 0.55s ease, top 0.55s ease, opacity 0.2s;
 }
 
-.avatar-body {
-    width: clamp(18px, 2.2vw, 30px);
-    height: clamp(18px, 2.2vw, 30px);
-    border-radius: 50%;
-    background: radial-gradient(circle at 38% 35%, #f5c87a, #c06030);
-    border: 2px solid rgba(255,255,255,0.9);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.3);
-    transition: transform 0.15s;
+/* ── Video avatar frame ── */
+#avatar-frame {
+    width: clamp(38px, 5.5vw, 80px);
+    height: clamp(72px, 10.5vw, 152px);
+    overflow: hidden;
+    border-radius: 6px;
+    position: relative;
+    /* Subtle drop shadow so character reads against any background */
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+}
+
+#avatar-video {
+    /* The character occupies roughly the centre 58% horizontally
+       and top 90% vertically of the 1280×720 frame.
+       We shift and scale to crop out the plain grey margins. */
+    position: absolute;
+    width: 172%;
+    height: 115%;
+    left: -36%;
+    top: -4%;
+    object-fit: cover;
+}
+
+/* Flip video for left-facing direction */
+#player-avatar[data-facing="left"] #avatar-frame {
+    transform: scaleX(-1);
 }
 
 .avatar-label {
@@ -489,10 +507,6 @@ body {
     white-space: nowrap;
     letter-spacing: 0.05em;
     font-family: 'Georgia', serif;
-}
-
-#player-avatar[data-facing="left"] .avatar-body {
-    transform: scaleX(-1);
 }
 
 #player-avatar.hidden {
