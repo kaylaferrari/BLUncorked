@@ -1,106 +1,584 @@
 /* ═══════════════════════════════════════════════════════════
-   BLUncorked — Interactive World Engine
-   Scenes: upper (Vaulted Bar) ↔ lower (Sussex Cellar)
+   BLUncorked — Immersive 3D Adventure World
+   Three.js r128 engine · point-and-click + WASD movement
    ═══════════════════════════════════════════════════════════ */
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    // ── State ──────────────────────────────────────────────
-    let currentScene  = 'upper';
-    let currentVerb   = 'look';
-    let inventory     = [];
-    let avatarX       = 50;
-    let avatarY       = 75;
-    let avatarFacing  = 'right';
-    let pendingAction = null;
-    let arrivalTimer  = null;
-    let walkTimer     = null;
+    // ════════════════════════════════════════════════════════
+    //  THREE.JS SCENE SETUP
+    // ════════════════════════════════════════════════════════
+    const threeCanvas = document.getElementById('three-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.9;
 
-    // ── DOM refs ───────────────────────────────────────────
-    const scene           = document.getElementById('game-scene');
-    const dialogueBox     = document.getElementById('dialogue-box');
-    const dialoguePanel   = document.getElementById('dialogue-panel');
-    const dialogueText    = document.getElementById('dialogue-text');
-    const dialogueChoices = document.getElementById('dialogue-choices');
-    const zonePanel       = document.getElementById('zone-panel');
-    const zonePanelTitle  = document.getElementById('zone-panel-title');
-    const zonePanelIcon   = document.getElementById('zone-panel-icon');
-    const zonePanelBody   = document.getElementById('zone-panel-body');
-    const overlay         = document.getElementById('transition-overlay');
-    const floorLabel      = document.getElementById('floor-label');
-    const btnUp           = document.getElementById('btn-up');
-    const btnDown         = document.getElementById('btn-down');
-    const avatar          = document.getElementById('player-avatar');
-    const avatarVideo     = document.getElementById('avatar-video');
-    const avatarCanvas    = document.getElementById('avatar-canvas');
+    const scene3d = new THREE.Scene();
+    scene3d.fog = new THREE.FogExp2(0x1a0a04, 0.018);
 
-    // ══════════════════════════════════════════════════════
-    //  CANVAS CHROMA-KEY RENDERER
-    //  Strips the neutral grey background from the video so
-    //  the character lives directly in the scene world.
-    // ══════════════════════════════════════════════════════
+    const camera = new THREE.PerspectiveCamera(60, 16/9, 0.1, 200);
+
+    // Texture loader
+    const texLoader = new THREE.TextureLoader();
+
+    // ── Floor groups ──────────────────────────────────────
+    const upperGroup = new THREE.Group();
+    const lowerGroup = new THREE.Group();
+    scene3d.add(upperGroup);
+    scene3d.add(lowerGroup);
+    lowerGroup.visible = false;
+
+    // ── Upper floor background plane ──────────────────────
+    (function buildUpperFloor() {
+        // Background cyclorama — large plane behind the scene
+        const bgTex = texLoader.load('Gemini_Generated_Image_s48kdss48kdss48k.png');
+        bgTex.encoding = THREE.sRGBEncoding;
+        const bgGeo = new THREE.PlaneGeometry(80, 45);
+        const bgMat = new THREE.MeshBasicMaterial({ map: bgTex, side: THREE.FrontSide });
+        const bgMesh = new THREE.Mesh(bgGeo, bgMat);
+        bgMesh.position.set(0, 10, -35);
+        upperGroup.add(bgMesh);
+
+        // Floor plane
+        const floorGeo = new THREE.PlaneGeometry(60, 40);
+        const floorMat = new THREE.MeshLambertMaterial({ color: 0x3a1e08 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = 0;
+        floor.receiveShadow = true;
+        upperGroup.add(floor);
+
+        // Ambient + warm directional light
+        const ambLight = new THREE.AmbientLight(0xc8843a, 0.7);
+        upperGroup.add(ambLight);
+        const dirLight = new THREE.DirectionalLight(0xffcc88, 0.9);
+        dirLight.position.set(5, 14, 8);
+        dirLight.castShadow = true;
+        upperGroup.add(dirLight);
+
+        // Pit opening — dark ellipse on floor
+        const pitGeo = new THREE.CircleGeometry(9, 48);
+        const pitMat = new THREE.MeshBasicMaterial({ color: 0x050202 });
+        const pit = new THREE.Mesh(pitGeo, pitMat);
+        pit.rotation.x = -Math.PI / 2;
+        pit.position.set(0, 0.01, 4);
+        upperGroup.add(pit);
+    })();
+
+    // ── Lower floor background plane ─────────────────────
+    (function buildLowerFloor() {
+        const bgTex = texLoader.load('Gemini_Generated_Image_njysn4njysn4njys.png');
+        bgTex.encoding = THREE.sRGBEncoding;
+        const bgGeo = new THREE.PlaneGeometry(90, 50);
+        const bgMat = new THREE.MeshBasicMaterial({ map: bgTex, side: THREE.FrontSide });
+        const bgMesh = new THREE.Mesh(bgGeo, bgMat);
+        bgMesh.position.set(0, 10, -36);
+        lowerGroup.add(bgMesh);
+
+        const floorGeo = new THREE.PlaneGeometry(60, 40);
+        const floorMat = new THREE.MeshLambertMaterial({ color: 0x1a0d06 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = 0;
+        floor.receiveShadow = true;
+        lowerGroup.add(floor);
+
+        const ambLight = new THREE.AmbientLight(0x8a5520, 0.65);
+        lowerGroup.add(ambLight);
+        const dirLight = new THREE.DirectionalLight(0xff9944, 0.7);
+        dirLight.position.set(-6, 16, 4);
+        dirLight.castShadow = true;
+        lowerGroup.add(dirLight);
+
+        // Ceiling opening — bright glow disc
+        const ceilGeo = new THREE.CircleGeometry(5, 32);
+        const ceilMat = new THREE.MeshBasicMaterial({ color: 0xf0c870 });
+        const ceil = new THREE.Mesh(ceilGeo, ceilMat);
+        ceil.rotation.x = -Math.PI / 2;
+        ceil.position.set(0, 12, -8);
+        lowerGroup.add(ceil);
+    })();
+
+    // ── Player group (invisible geometry — just a position anchor) ──
+    const playerGroup = new THREE.Group();
+    playerGroup.position.set(0, 0, 8);
+    scene3d.add(playerGroup);
+
+    // ════════════════════════════════════════════════════════
+    //  INTERACTIVE SPOTS — 3D positions replace 2D hotspot divs
+    // ════════════════════════════════════════════════════════
+    const SPOTS = {
+        upper: [
+            { id:'welcome',      label:'Welcome to BL',       icon:'🍷',  floor:'upper', zone:'welcome',     pos:[ 0,  0,-15], radius:7  },
+            { id:'skills',       label:'Skills Table',         icon:'🛠',  floor:'upper', zone:'skills',      pos:[-18, 0, -5], radius:7  },
+            { id:'casestudies',  label:'Case Studies Corner',  icon:'📋', floor:'upper', zone:'casestudies', pos:[12,  0,-16], radius:7  },
+            { id:'vintage',      label:'The Vintage Wall',     icon:'📅', floor:'upper', zone:'vintage',     pos:[22,  0, -6], radius:7  },
+            { id:'sommelier',    label:'The Sommelier',        icon:'🧔', floor:'upper', npc:'Sommelier',    pos:[20,  0,  8], radius:5  },
+            { id:'bottle',       label:'Glowing Bottle',       icon:'🍾', floor:'upper', item:'Glowing Bottle', pos:[24, 0, 10], radius:4 },
+            { id:'corkscrew',    label:'Giant Corkscrew',      icon:'🔩', floor:'upper', prop:'Giant Corkscrew', pos:[-22,0,-8], radius:5 },
+            { id:'doors',        label:'Double Doors',         icon:'🚪', floor:'upper', prop:'Double Doors', pos:[0,  0, 22], radius:6  },
+            { id:'pit',          label:'Lower Cellar',         icon:'⬇',  floor:'upper', goto:'lower',       pos:[ 0,  0,  4], radius:9  },
+        ],
+        lower: [
+            { id:'awards',       label:'Awards Alcove',        icon:'🏆', floor:'lower', zone:'awards',      pos:[-18, 0,  0], radius:8  },
+            { id:'guide',        label:'Guide',                icon:'👤', floor:'lower', npc:'Guide',        pos:[ 0,  0,  8], radius:5  },
+            { id:'vintage-lower',label:'The Vintage Wall',     icon:'📅', floor:'lower', zone:'vintage',     pos:[18,  0,  0], radius:8  },
+            { id:'cellar-up',    label:'Upper Bar',            icon:'⬆',  floor:'lower', goto:'upper',       pos:[ 0,  0, -8], radius:6  },
+        ]
+    };
+
+    // Flatten for easy iteration
+    function currentSpots() {
+        return SPOTS[currentScene] || [];
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  CAMERA — spherical orbit with smooth follow
+    // ════════════════════════════════════════════════════════
+    const sph = { theta: 0, phi: 0.88, r: 28 };
+    const CAM_K = 4.5;
+    let camBase = new THREE.Vector3();
+    camBase.copy(playerGroup.position);
+
+    function updateCamera(dt) {
+        // Smooth follow: exponential lerp toward player
+        const alpha = 1 - Math.exp(-CAM_K * dt);
+        camBase.lerp(playerGroup.position, alpha);
+
+        // Look-ahead: nudge camera toward movement direction
+        const lookAhead = moveDir.clone().multiplyScalar(3.5);
+        const target = camBase.clone().add(lookAhead);
+
+        // Spherical orbit from base
+        const cx = target.x + sph.r * Math.sin(sph.phi) * Math.sin(sph.theta);
+        const cy = target.y + sph.r * Math.cos(sph.phi);
+        const cz = target.z + sph.r * Math.sin(sph.phi) * Math.cos(sph.theta);
+
+        camera.position.set(cx, cy, cz);
+        camera.lookAt(target.x, target.y + 1.2, target.z);
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  WASD MOVEMENT
+    // ════════════════════════════════════════════════════════
+    const keys = {};
+    const MOVE_SPEED = 8;
+    const moveDir = new THREE.Vector3();
+
+    document.addEventListener('keydown', e => {
+        keys[e.code] = true;
+        if (e.code === 'KeyE') triggerNearestSpot();
+    });
+    document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+    function processMovement(dt) {
+        // Camera-relative forward/right vectors
+        const camFwd = new THREE.Vector3();
+        camera.getWorldDirection(camFwd);
+        camFwd.y = 0;
+        camFwd.normalize();
+        const camRight = new THREE.Vector3();
+        camRight.crossVectors(camFwd, new THREE.Vector3(0,1,0)).normalize();
+
+        moveDir.set(0, 0, 0);
+        if (keys['KeyW'] || keys['ArrowUp'])    moveDir.addScaledVector(camFwd,   1);
+        if (keys['KeyS'] || keys['ArrowDown'])  moveDir.addScaledVector(camFwd,  -1);
+        if (keys['KeyA'] || keys['ArrowLeft'])  moveDir.addScaledVector(camRight,-1);
+        if (keys['KeyD'] || keys['ArrowRight']) moveDir.addScaledVector(camRight,  1);
+
+        if (moveDir.lengthSq() > 0) {
+            moveDir.normalize();
+            const newPos = playerGroup.position.clone().addScaledVector(moveDir, MOVE_SPEED * dt);
+
+            // Clamp to walkable bounds
+            const bounds = currentScene === 'upper'
+                ? { minX:-28, maxX:28, minZ:-30, maxZ:18 }
+                : { minX:-25, maxX:25, minZ:-18, maxZ:16 };
+
+            // Pit exclusion on upper floor
+            if (currentScene === 'upper') {
+                const inPit = Math.hypot(newPos.x / 9, (newPos.z - 4) / 9) < 1;
+                if (!inPit) {
+                    newPos.x = Math.max(bounds.minX, Math.min(bounds.maxX, newPos.x));
+                    newPos.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, newPos.z));
+                    playerGroup.position.copy(newPos);
+                }
+            } else {
+                newPos.x = Math.max(bounds.minX, Math.min(bounds.maxX, newPos.x));
+                newPos.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, newPos.z));
+                playerGroup.position.copy(newPos);
+            }
+
+            // Facing direction
+            if (moveDir.x < -0.3) avatarFacing = 'left';
+            else if (moveDir.x > 0.3) avatarFacing = 'right';
+            avatar.setAttribute('data-facing', avatarFacing);
+            setAvatarState('walking');
+        } else {
+            setAvatarState('idle');
+        }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  CLICK-TO-WALK (3D raycasting)
+    // ════════════════════════════════════════════════════════
+    const raycaster = new THREE.Raycaster();
+    const walkPlane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+
+    threeCanvas.addEventListener('click', e => {
+        // Ignore clicks on UI panels
+        if (e.target !== threeCanvas) return;
+
+        const rect = threeCanvas.getBoundingClientRect();
+        const ndx = ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+        const ndy = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+        raycaster.setFromCamera({ x: ndx, y: ndy }, camera);
+
+        const hit = new THREE.Vector3();
+        raycaster.ray.intersectPlane(walkPlane, hit);
+        if (!hit) return;
+
+        // Clamp to bounds
+        const bounds = currentScene === 'upper'
+            ? { minX:-28, maxX:28, minZ:-30, maxZ:18 }
+            : { minX:-25, maxX:25, minZ:-18, maxZ:16 };
+        hit.x = Math.max(bounds.minX, Math.min(bounds.maxX, hit.x));
+        hit.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, hit.z));
+
+        // Check if clicking near a spot
+        let clickedSpot = null;
+        for (const sp of currentSpots()) {
+            if (Math.hypot(hit.x - sp.pos[0], hit.z - sp.pos[2]) < sp.radius * 1.3) {
+                clickedSpot = sp;
+                break;
+            }
+        }
+
+        if (clickedSpot) {
+            walkToSpot(clickedSpot);
+        } else {
+            walkToPoint(hit.x, hit.z, null);
+        }
+    });
+
+    // ── Click on spot label chips ─────────────────────────
+    // (handled via zone banner E-key or proximity trigger)
+
+    // ════════════════════════════════════════════════════════
+    //  WALK-TO-POINT (click destination)
+    // ════════════════════════════════════════════════════════
+    let walkTarget = null;
+    let walkCallback = null;
+    const WALK_ARRIVE_DIST = 1.8;
+
+    function walkToPoint(x, z, callback) {
+        walkTarget = new THREE.Vector3(x, 0, z);
+        walkCallback = callback || null;
+    }
+
+    function walkToSpot(spot) {
+        const [sx,,sz] = spot.pos;
+        const angle = Math.atan2(
+            playerGroup.position.x - sx,
+            playerGroup.position.z - sz
+        );
+        // Approach from the player-side edge of the spot radius
+        const approachDist = Math.max(spot.radius * 0.7, 2.5);
+        const tx = sx + Math.sin(angle) * approachDist;
+        const tz = sz + Math.cos(angle) * approachDist;
+        walkToPoint(tx, tz, () => interactWithSpot(spot));
+    }
+
+    function processWalkTarget(dt) {
+        if (!walkTarget) return;
+        const dx = walkTarget.x - playerGroup.position.x;
+        const dz = walkTarget.z - playerGroup.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        if (dist < WALK_ARRIVE_DIST) {
+            walkTarget = null;
+            setAvatarState('idle');
+            if (walkCallback) {
+                const cb = walkCallback;
+                walkCallback = null;
+                setTimeout(cb, 120);
+            }
+            return;
+        }
+        const speed = MOVE_SPEED * dt;
+        const nx = playerGroup.position.x + (dx/dist) * speed;
+        const nz = playerGroup.position.z + (dz/dist) * speed;
+        playerGroup.position.set(nx, 0, nz);
+
+        if (dx < -0.3) avatarFacing = 'left';
+        else if (dx > 0.3) avatarFacing = 'right';
+        avatar.setAttribute('data-facing', avatarFacing);
+        setAvatarState('walking');
+
+        // Rotate camera to track walk direction
+        moveDir.set(dx/dist, 0, dz/dist);
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  PROXIMITY DETECTION
+    // ════════════════════════════════════════════════════════
+    let proximitySpot = null;
+    let lastBannerSpot = null;
+
+    function checkProximity() {
+        const px = playerGroup.position.x;
+        const pz = playerGroup.position.z;
+        let nearest = null;
+        let nearestDist = Infinity;
+
+        for (const sp of currentSpots()) {
+            const d = Math.hypot(px - sp.pos[0], pz - sp.pos[2]);
+            if (d < sp.radius && d < nearestDist) {
+                nearest = sp;
+                nearestDist = d;
+            }
+        }
+
+        proximitySpot = nearest;
+
+        if (nearest !== lastBannerSpot) {
+            lastBannerSpot = nearest;
+            if (nearest) showZoneBanner(nearest);
+            else hideZoneBanner();
+        }
+    }
+
+    function showZoneBanner(spot) {
+        zoneBanner.classList.remove('hidden');
+        document.getElementById('zone-banner-icon').textContent = spot.icon || '';
+        document.getElementById('zone-banner-name').textContent = spot.label || '';
+    }
+
+    function hideZoneBanner() {
+        zoneBanner.classList.add('hidden');
+    }
+
+    function triggerNearestSpot() {
+        if (proximitySpot) interactWithSpot(proximitySpot);
+    }
+
+    function interactWithSpot(spot) {
+        if (spot.goto) {
+            goToScene(spot.goto);
+            return;
+        }
+        if (spot.zone) {
+            openZonePanel(spot.zone);
+            return;
+        }
+        if (spot.npc) {
+            openDialogue(spot.npc);
+            return;
+        }
+        if (spot.item || spot.prop) {
+            const target = spot.item || spot.prop;
+            handleAction(currentVerb, target, spot.item ? 'item' : 'prop', spot);
+            return;
+        }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  AVATAR DOM PROJECTION (3D → 2D viewport position)
+    // ════════════════════════════════════════════════════════
+    const avatar    = document.getElementById('player-avatar');
+    const wrapper   = document.getElementById('game-wrapper');
+    let avatarFacing = 'right';
+
+    function projectAvatar() {
+        const worldPos = playerGroup.position.clone();
+        worldPos.y = 0;
+
+        // Project to NDC
+        const ndc = worldPos.clone().project(camera);
+
+        // Convert NDC to canvas pixel coords
+        const W = threeCanvas.clientWidth;
+        const H = threeCanvas.clientHeight;
+        const sx = (ndc.x  + 1) / 2 * W;
+        const sy = (-ndc.y + 1) / 2 * H;
+
+        // Distance-based perspective scale
+        const dist = camera.position.distanceTo(worldPos);
+        const perspScale = Math.max(0.3, Math.min(1.8, 22 / dist));
+
+        // Position relative to game-wrapper
+        const wRect = wrapper.getBoundingClientRect();
+        const cRect = threeCanvas.getBoundingClientRect();
+        const ax = cRect.left - wRect.left + sx;
+        const ay = cRect.top  - wRect.top  + sy;
+
+        avatar.style.left      = ax + 'px';
+        avatar.style.top       = ay + 'px';
+        avatar.style.transform = `translate(-50%, -90%) scale(${perspScale.toFixed(3)})`;
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  MINIMAP
+    // ════════════════════════════════════════════════════════
+    const minimapCanvas = document.getElementById('minimap');
+    const mmCtx = minimapCanvas.getContext('2d');
+    const MM_SIZE = 120;
+    minimapCanvas.width  = MM_SIZE;
+    minimapCanvas.height = MM_SIZE;
+
+    // World space → minimap coords
+    function wToMM(wx, wz) {
+        const scale = MM_SIZE / 60;
+        return {
+            x: MM_SIZE/2 + wx * scale,
+            y: MM_SIZE/2 + wz * scale
+        };
+    }
+
+    function drawMinimap() {
+        mmCtx.clearRect(0, 0, MM_SIZE, MM_SIZE);
+
+        // Circular clip
+        mmCtx.save();
+        mmCtx.beginPath();
+        mmCtx.arc(MM_SIZE/2, MM_SIZE/2, MM_SIZE/2 - 2, 0, Math.PI*2);
+        mmCtx.clip();
+
+        // Background
+        mmCtx.fillStyle = 'rgba(20,10,4,0.85)';
+        mmCtx.fillRect(0, 0, MM_SIZE, MM_SIZE);
+
+        // Zone dots
+        for (const sp of currentSpots()) {
+            const { x, y } = wToMM(sp.pos[0], sp.pos[2]);
+            mmCtx.beginPath();
+            mmCtx.arc(x, y, 5, 0, Math.PI*2);
+            mmCtx.fillStyle = sp.goto ? '#6cf' :
+                              sp.npc  ? '#fa8' :
+                              sp.zone ? '#fc6' : '#aaa';
+            mmCtx.fill();
+        }
+
+        // Player dot
+        const pp = wToMM(playerGroup.position.x, playerGroup.position.z);
+        mmCtx.beginPath();
+        mmCtx.arc(pp.x, pp.y, 5, 0, Math.PI*2);
+        mmCtx.fillStyle = '#fff';
+        mmCtx.fill();
+
+        mmCtx.restore();
+
+        // Border ring
+        mmCtx.beginPath();
+        mmCtx.arc(MM_SIZE/2, MM_SIZE/2, MM_SIZE/2 - 2, 0, Math.PI*2);
+        mmCtx.strokeStyle = '#8a5a28';
+        mmCtx.lineWidth = 3;
+        mmCtx.stroke();
+
+        // Floor label
+        mmCtx.fillStyle = '#e8c880';
+        mmCtx.font = '9px Georgia, serif';
+        mmCtx.textAlign = 'center';
+        mmCtx.fillText(currentScene === 'upper' ? 'UPPER BAR' : 'SUSSEX CELLAR', MM_SIZE/2, MM_SIZE - 6);
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  RENDERER RESIZE
+    // ════════════════════════════════════════════════════════
+    function onResize() {
+        const W = wrapper.clientWidth;
+        const H = wrapper.clientHeight - document.getElementById('ui-bar').offsetHeight;
+        renderer.setSize(W, H, false);
+        camera.aspect = W / H;
+        camera.updateProjectionMatrix();
+        threeCanvas.style.width  = W + 'px';
+        threeCanvas.style.height = H + 'px';
+    }
+    window.addEventListener('resize', onResize);
+    onResize();
+
+    // ════════════════════════════════════════════════════════
+    //  MAIN RENDER LOOP
+    // ════════════════════════════════════════════════════════
+    let lastTime = performance.now();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const now = performance.now();
+        const dt = Math.min((now - lastTime) / 1000, 0.1);
+        lastTime = now;
+
+        // Only process WASD if no click-walk target active
+        if (walkTarget) {
+            processWalkTarget(dt);
+        } else {
+            processMovement(dt);
+        }
+
+        checkProximity();
+        updateCamera(dt);
+        projectAvatar();
+        chromaKeyFrame();
+        drawMinimap();
+        renderer.render(scene3d, camera);
+    }
+
+    animate();
+
+    // ════════════════════════════════════════════════════════
+    //  CANVAS CHROMA-KEY RENDERER (strips grey background)
+    // ════════════════════════════════════════════════════════
+    const avatarVideo  = document.getElementById('avatar-video');
+    const avatarCanvas = document.getElementById('avatar-canvas');
     const ctx = avatarCanvas ? avatarCanvas.getContext('2d', { willReadFrequently: true }) : null;
     let chromaKeyFailed = false;
 
-    // Source crop: character occupies roughly centre 64% horiz, full height
-    const SRC_X = Math.round(1280 * 0.18);  // 230
+    const SRC_X = Math.round(1280 * 0.18);
     const SRC_Y = 0;
-    const SRC_W = Math.round(1280 * 0.64);  // 819
+    const SRC_W = Math.round(1280 * 0.64);
     const SRC_H = 720;
 
     function chromaKeyFrame() {
         if (!ctx || chromaKeyFailed || avatarVideo.readyState < 2) return;
         try {
-            ctx.drawImage(avatarVideo, SRC_X, SRC_Y, SRC_W, SRC_H,
-                          0, 0, avatarCanvas.width, avatarCanvas.height);
+            ctx.drawImage(avatarVideo, SRC_X, SRC_Y, SRC_W, SRC_H, 0, 0, avatarCanvas.width, avatarCanvas.height);
             const imgData = ctx.getImageData(0, 0, avatarCanvas.width, avatarCanvas.height);
             const d = imgData.data;
             for (let i = 0; i < d.length; i += 4) {
                 const r = d[i], g = d[i+1], b = d[i+2];
                 const lum = (r + g + b) / 3;
                 const sat = Math.max(r, g, b) - Math.min(r, g, b);
-                // Neutral grey background: low saturation, above brightness threshold
                 if (sat < 28 && lum > 140) {
-                    // Soft feather at edges: pixels closer to character colour stay more opaque
                     const bgStrength = (1 - sat / 28) * Math.min(1, (lum - 140) / 45);
                     d[i+3] = Math.round((1 - bgStrength) * 255);
                 }
             }
             ctx.putImageData(imgData, 0, 0);
         } catch (e) {
-            // Canvas tainted (cross-origin) — fall back to showing the video element
             chromaKeyFailed = true;
             if (avatarCanvas) avatarCanvas.style.display = 'none';
             if (avatarVideo)  avatarVideo.style.display  = 'block';
         }
     }
 
-    function renderLoop() {
-        chromaKeyFrame();
-        requestAnimationFrame(renderLoop);
-    }
-
     if (ctx) {
         avatarVideo.addEventListener('canplay', () => {
             avatarVideo.currentTime = 0.0;
             avatarVideo.play().catch(() => {});
-            renderLoop();
         }, { once: true });
     }
 
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  AVATAR ANIMATION STATE MACHINE
-    //  Video segments (24fps, 10.01s):
-    //    idle    → 0.0 – 1.5s  (standing, front)
-    //    walking → 2.5 – 5.0s  (walk cycle)
-    //    talking → 9.0 – 10.0s (both-hands gesture)
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     const AVATAR_SEGS = {
         idle:    { start: 0.0, end: 1.5  },
         walking: { start: 2.5, end: 5.0  },
         talking: { start: 9.0, end: 10.0 },
     };
-
     let avatarAnimState = 'idle';
 
     function setAvatarState(state) {
@@ -120,155 +598,57 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ══════════════════════════════════════════════════════
-    //  PERSPECTIVE SCALE — avatar shrinks into the distance
-    // ══════════════════════════════════════════════════════
-    function getScale(yPct) {
-        if (currentScene === 'upper') {
-            const t = Math.max(0, Math.min(1, (yPct - 42) / 50));
-            return 0.45 + t * 0.75; // 0.45 at top → 1.2 at bottom
-        } else {
-            const t = Math.max(0, Math.min(1, (yPct - 15) / 75));
-            return 0.4 + t * 0.75;  // 0.4 at top → 1.15 at bottom
-        }
-    }
-
-    function applyTransform(xPct, yPct, instant) {
-        const scale = getScale(yPct);
-        if (instant) {
-            avatar.style.transition = 'none';
-            requestAnimationFrame(() => { avatar.style.transition = ''; });
-        }
-        avatar.style.left      = xPct + '%';
-        avatar.style.top       = yPct + '%';
-        avatar.style.transform = `translateX(-50%) scale(${scale.toFixed(3)})`;
-    }
-
-    // ══════════════════════════════════════════════════════
-    //  ARRIVAL — fires when CSS position transition ends
-    // ══════════════════════════════════════════════════════
-    avatar.addEventListener('transitionend', (e) => {
-        if (e.propertyName !== 'left' && e.propertyName !== 'top') return;
-        clearTimeout(arrivalTimer);
-        arrivalTimer = setTimeout(() => {
-            clearTimeout(walkTimer);
-            setAvatarState('idle');
-            if (pendingAction) {
-                const fn = pendingAction;
-                pendingAction = null;
-                setTimeout(fn, 120); // brief pause so avatar settles before panel opens
-            }
-        }, 40);
-    });
-
-    // ══════════════════════════════════════════════════════
-    //  AVATAR MOVEMENT
-    // ══════════════════════════════════════════════════════
-    function getWalkDuration(x1, y1, x2, y2) {
-        // Distance in %-space, corrected for 16:9 aspect ratio
-        const dx = (x2 - x1) / 1.78;
-        const dy = y2 - y1;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        return Math.max(0.3, Math.min(1.6, dist * 0.03));
-    }
-
-    function moveAvatar(xPct, yPct) {
-        if (xPct < avatarX - 0.5) avatarFacing = 'left';
-        else if (xPct > avatarX + 0.5) avatarFacing = 'right';
-
-        const dur = getWalkDuration(avatarX, avatarY, xPct, yPct);
-        avatarX = xPct;
-        avatarY = yPct;
-
-        avatar.setAttribute('data-facing', avatarFacing);
-        avatar.style.transitionDuration = `${dur}s, ${dur}s, ${dur}s, 0.2s`;
-        applyTransform(xPct, yPct);
-        setAvatarState('walking');
-    }
-
-    function placeAvatar(xPct, yPct) {
-        avatarX = xPct;
-        avatarY = yPct;
-        clearTimeout(walkTimer);
-        pendingAction = null;
-        setAvatarState('idle');
-        applyTransform(xPct, yPct, true);
-    }
-
-    // Walk to approach point, then execute callback on arrival
-    function walkThenDo(xPct, yPct, callback) {
-        pendingAction = callback;
-        moveAvatar(xPct, yPct);
-    }
-
-    // ══════════════════════════════════════════════════════
-    //  WALKABLE AREA
-    // ══════════════════════════════════════════════════════
-    function isWalkable(xPct, yPct) {
-        if (currentScene === 'upper') {
-            const topBoundary = xPct < 25 ? 52 : 42;
-            if (yPct < topBoundary || yPct > 92) return false;
-            // Pit exclusion ellipse: centre (50,66), rx=30, ry=16
-            if (Math.pow((xPct - 50) / 30, 2) + Math.pow((yPct - 66) / 16, 2) < 1) return false;
-            return true;
-        }
-        if (currentScene === 'lower') {
-            if (Math.pow((xPct - 50) / 44, 2) + Math.pow((yPct - 55) / 40, 2) >= 1) return false;
-            if (Math.pow((xPct - 50) / 20, 2) + Math.pow((yPct - 14) / 9,  2) < 1) return false;
-            return true;
-        }
-        return false;
-    }
-
-    // ══════════════════════════════════════════════════════
-    //  SCENE CLICK — WALK TO POINT
-    // ══════════════════════════════════════════════════════
-    scene.addEventListener('click', (e) => {
-        if (e.target !== scene && e.target.closest('.hotspot, .panel, #ui-bar, #player-avatar')) return;
-
-        const rect = scene.getBoundingClientRect();
-        const xPct = ((e.clientX - rect.left)  / rect.width)  * 100;
-        const yPct = ((e.clientY - rect.top)    / rect.height) * 100;
-
-        if (!isWalkable(xPct, yPct)) {
-            showMessage("You can't walk there.");
-            return;
-        }
-
-        pendingAction = null; // cancel any pending interaction
-        moveAvatar(xPct, yPct);
-    });
-
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  SCENE MANAGEMENT
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    let currentScene = 'upper';
+    let currentVerb  = 'look';
+    let inventory    = [];
+
+    const overlay      = document.getElementById('transition-overlay');
+    const floorLabel   = document.getElementById('floor-label');
+    const btnUp        = document.getElementById('btn-up');
+    const btnDown      = document.getElementById('btn-down');
+    const zoneBanner   = document.getElementById('zone-banner');
+
     function goToScene(target) {
         if (target === currentScene) return;
-        pendingAction = null;
-        avatar.classList.add('hidden');
         overlay.classList.add('active');
+        walkTarget = null;
+        walkCallback = null;
 
         setTimeout(() => {
             currentScene = target;
-            scene.className = target === 'lower' ? 'lower' : '';
+            upperGroup.visible = target === 'upper';
+            lowerGroup.visible = target === 'lower';
+
             floorLabel.textContent = target === 'lower' ? 'Sussex Cellar' : 'Upper Bar';
-            btnUp.disabled   = (target === 'upper');
-            btnDown.disabled = (target === 'lower');
-            placeAvatar(target === 'lower' ? 50 : 50,
-                        target === 'lower' ? 65 : 75);
-            overlay.classList.remove('active');
+            btnUp.disabled   = target === 'upper';
+            btnDown.disabled = target === 'lower';
+
+            // Teleport player to arrival position
+            if (target === 'lower') {
+                playerGroup.position.set(0, 0, -2);
+            } else {
+                playerGroup.position.set(0, 0, 12);
+            }
+            camBase.copy(playerGroup.position);
+
             closeAllPanels();
-            setTimeout(() => avatar.classList.remove('hidden'), 100);
+            hideZoneBanner();
+            proximitySpot = null;
+            lastBannerSpot = null;
+
+            overlay.classList.remove('active');
         }, 350);
     }
 
     btnUp.addEventListener('click',   () => goToScene('upper'));
     btnDown.addEventListener('click', () => goToScene('lower'));
 
-    // Wine Scanner panel
-    const btnScanWine  = document.getElementById('btn-scan-wine');
+    // Wine scanner
     const scannerPanel = document.getElementById('scanner-panel');
-    btnScanWine.addEventListener('click', () => {
+    document.getElementById('btn-scan-wine').addEventListener('click', () => {
         if (scannerPanel.classList.contains('hidden')) {
             closeAllPanels();
             scannerPanel.classList.remove('hidden');
@@ -277,9 +657,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  VERB BUTTONS
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     const actionButtons = document.querySelectorAll('.action-buttons button');
     actionButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -287,47 +667,28 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.add('active');
             currentVerb = btn.id.replace('btn-', '');
             hideDialogueBox();
+
+            // Apply verb to nearest proximity spot
+            if (proximitySpot) {
+                const sp = proximitySpot;
+                if (currentVerb === 'talk' && sp.npc) {
+                    openDialogue(sp.npc);
+                } else if (currentVerb === 'use' && sp.goto) {
+                    goToScene(sp.goto);
+                } else {
+                    const target = sp.item || sp.prop || sp.label;
+                    const type   = sp.item ? 'item' : sp.npc ? 'npc' : sp.prop ? 'prop' : 'zone';
+                    handleAction(currentVerb, target, type, sp);
+                }
+            }
         });
     });
 
-    // ══════════════════════════════════════════════════════
-    //  HOTSPOT ROUTING — walk first, then interact
-    // ══════════════════════════════════════════════════════
-    document.querySelectorAll('.hotspot').forEach(spot => {
-        spot.addEventListener('click', (e) => {
-            e.stopPropagation();
-
-            // Only respond to hotspots belonging to the current scene
-            if (spot.dataset.scene && spot.dataset.scene !== currentScene) return;
-
-            const { target, zone, goto, ax, ay } = spot.dataset;
-            const type = spot.classList[1];
-
-            // Approach coordinates embedded on each hotspot (data-ax, data-ay)
-            const approachX = ax ? parseFloat(ax) : avatarX;
-            const approachY = ay ? parseFloat(ay) : avatarY;
-
-            if (zone) {
-                walkThenDo(approachX, approachY, () => openZonePanel(zone));
-                return;
-            }
-            if (goto) {
-                walkThenDo(approachX, approachY, () => goToScene(goto));
-                return;
-            }
-            if (currentVerb === 'talk' && type === 'npc') {
-                walkThenDo(approachX, approachY, () => openDialogue(target));
-                return;
-            }
-            walkThenDo(approachX, approachY, () => handleAction(currentVerb, target, type, spot));
-        });
-    });
-
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  INTERACTION LOGIC
-    // ══════════════════════════════════════════════════════
-    function handleAction(verb, target, type, el) {
-        if (verb === 'talk' && type === 'npc') { openDialogue(target); return; }
+    // ════════════════════════════════════════════════════════
+    function handleAction(verb, target, type, sp) {
+        if (verb === 'talk' && type === 'npc') { openDialogue(sp.npc || target); return; }
 
         let text = '';
         switch (verb) {
@@ -336,7 +697,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 break;
             case 'take':
                 if (type === 'item') {
-                    addToInventory(target, el);
+                    addToInventory(target, sp);
                     text = `You carefully take the ${target}.`;
                 } else if (target === 'Giant Corkscrew') {
                     text = "It's bolted to the floor. Decorative, or a warning.";
@@ -345,11 +706,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 break;
             case 'talk':
-                if (type === 'npc') { openDialogue(target); return; }
                 text = "There's no one here to talk to about that.";
                 break;
             case 'use':
-                if (type === 'exit') { goToScene(el.dataset.goto || 'lower'); return; }
+                if (sp && sp.goto) { goToScene(sp.goto); return; }
                 if (target === 'Giant Corkscrew') text = "You'd need a very large bottle.";
                 else if (target === 'Glowing Bottle') text = "The bottle hums. Press the Scan Wine button to analyse it.";
                 else text = "You're not sure how to use that.";
@@ -360,7 +720,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function lookText(target) {
         const lines = {
-            'Lower Cellar':    "Through the glass floor you can see the Sussex Cellar below. Click the pit to go down.",
+            'Lower Cellar':    "Through the glass floor you can see the Sussex Cellar below. Walk to the pit and press E to go down.",
             'Giant Corkscrew': "An oversized antique brass corkscrew. Imposing. Probably Art Deco. Definitely not functional.",
             'Glowing Bottle':  "It pulses with an eerie amber light. The label reads: Founder's Reserve, 2012. It hasn't been scanned.",
             'Double Doors':    "Heavy oak doors bound in iron. The way out — or the way further in.",
@@ -371,16 +731,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return lines[target] || `You examine the ${target}. Interesting.`;
     }
 
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  ZONE CONTENT
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     const ZONES = {
         welcome: {
             icon: '🍷', title: 'Welcome to BL',
             html: `
                 <h3>Welcome to BLUncorked</h3>
                 <p>You've arrived at the Brainlabs wine cellar — an interactive world built for BLUncorked. Explore both floors, meet the team, and scan your wine.</p>
-                <p>Click anywhere on the floor to walk. Use <strong>Look</strong>, <strong>Take</strong>, <strong>Talk</strong>, and <strong>Use</strong> to interact with the world.</p>
+                <p>Use <strong>WASD</strong> or click the floor to walk. Press <strong>E</strong> near anything to interact. Use the verb buttons — Look, Take, Talk, Use — for additional actions.</p>
                 <p>Head through the glass pit to explore the Sussex Cellar below.</p>
                 <div style="margin-top:14px">
                     <span class="zone-tag">🗓 BLUncorked 2025</span>
@@ -449,51 +809,55 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  SOMMELIER DIALOGUE TREE
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     const DIALOGUE = {
         start: {
             text: `"Ah — welcome. You've found your way to one of the finest cellars in the building." He adjusts his monocle. "I am the Sommelier. How may I assist?"`,
             choices: [
-                { label: "Tell me about this place.",    next: 'about'  },
-                { label: "What's that glowing bottle?",  next: 'bottle' },
-                { label: "How do I get downstairs?",     next: 'stairs' },
-                { label: "Nothing, thank you.",          next: null     },
+                { label: "Tell me about this place.",   next: 'about'  },
+                { label: "What's that glowing bottle?", next: 'bottle' },
+                { label: "How do I get downstairs?",    next: 'stairs' },
+                { label: "Nothing, thank you.",         next: null     },
             ]
         },
         about: {
             text: `"This is BLUncorked — the Brainlabs world. The upper floor holds the bar, the skills table, case studies. Downstairs is the Sussex Cellar — quieter, more curated. Both floors are yours to explore."`,
             choices: [
-                { label: "What's that glowing bottle?",  next: 'bottle' },
-                { label: "How do I get downstairs?",     next: 'stairs' },
-                { label: "One more question…",           next: 'start'  },
-                { label: "That's all. Thank you.",       next: null     },
+                { label: "What's that glowing bottle?", next: 'bottle' },
+                { label: "How do I get downstairs?",    next: 'stairs' },
+                { label: "One more question…",          next: 'start'  },
+                { label: "That's all. Thank you.",      next: null     },
             ]
         },
         bottle: {
             text: `He glances at it with evident unease. "The 2012 Founder's Reserve. The vintage that started all of this." A pause. "It glows because it hasn't been scanned yet. Use the Wine Scanner — it calms down."`,
             choices: [
-                { label: "How do I scan wine?",         next: 'scan'  },
-                { label: "Tell me about this place.",   next: 'about' },
-                { label: "Farewell.",                   next: null    },
+                { label: "How do I scan wine?",       next: 'scan'  },
+                { label: "Tell me about this place.", next: 'about' },
+                { label: "Farewell.",                 next: null    },
             ]
         },
         scan: {
             text: `"Tap the Scan Wine button in your bar. Point your camera at any label. The system reads it and produces a full tasting profile — score, notes, pairings, all of it. Manual entry if the label is obscured. It's not cheating. It's curation."`,
             choices: [
-                { label: "And downstairs?",             next: 'stairs' },
-                { label: "That's all. Thank you.",      next: null     },
+                { label: "And downstairs?",        next: 'stairs' },
+                { label: "That's all. Thank you.", next: null     },
             ]
         },
         stairs: {
-            text: `"The circular glass opening in the floor." He gestures. "Walk to the edge, click down. The Sussex Cellar holds the awards wall, the vintage collection, and a guide. Mind the step."`,
+            text: `"The circular glass opening in the floor." He gestures. "Walk to the pit, press E to descend. The Sussex Cellar holds the awards wall, the vintage collection, and a guide. Mind the step."`,
             choices: [
-                { label: "One more question…",          next: 'start' },
-                { label: "Thank you. Goodbye.",         next: null    },
+                { label: "One more question…",     next: 'start' },
+                { label: "Thank you. Goodbye.",    next: null    },
             ]
         }
     };
+
+    const dialoguePanel   = document.getElementById('dialogue-panel');
+    const dialogueText    = document.getElementById('dialogue-text');
+    const dialogueChoices = document.getElementById('dialogue-choices');
 
     function openDialogue(npcName) {
         closeAllPanels();
@@ -525,9 +889,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  ZONE PANELS
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    const zonePanel      = document.getElementById('zone-panel');
+    const zonePanelTitle = document.getElementById('zone-panel-title');
+    const zonePanelIcon  = document.getElementById('zone-panel-icon');
+    const zonePanelBody  = document.getElementById('zone-panel-body');
+
     function openZonePanel(zoneId) {
         const z = ZONES[zoneId];
         if (!z) return;
@@ -538,13 +907,12 @@ document.addEventListener("DOMContentLoaded", () => {
         zonePanel.classList.remove('hidden');
     }
 
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  INVENTORY
-    // ══════════════════════════════════════════════════════
-    function addToInventory(itemName, el) {
+    // ════════════════════════════════════════════════════════
+    function addToInventory(itemName, sp) {
         if (inventory.includes(itemName)) return;
         inventory.push(itemName);
-        el.style.display = 'none';
         const slots = document.querySelectorAll('.slot');
         const idx = inventory.length - 1;
         if (idx < slots.length) {
@@ -552,9 +920,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  PANEL CLOSE
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     document.querySelectorAll('.panel-close').forEach(btn => {
         btn.addEventListener('click', () => {
             document.getElementById(btn.dataset.panel).classList.add('hidden');
@@ -567,10 +935,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (avatarAnimState === 'talking') setAvatarState('idle');
     }
 
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  AMBIENT DIALOGUE BOX
-    // ══════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    const dialogueBox = document.getElementById('dialogue-box');
     let msgTimer;
+
     function showMessage(text) {
         if (!text) return;
         dialogueBox.textContent = text;
@@ -581,5 +951,51 @@ document.addEventListener("DOMContentLoaded", () => {
     function hideDialogueBox() {
         dialogueBox.classList.add('hidden');
     }
+
+    // ════════════════════════════════════════════════════════
+    //  CONTROLS HINT — fade on first movement
+    // ════════════════════════════════════════════════════════
+    const controlsHint = document.getElementById('controls-hint');
+    let hintFaded = false;
+    function maybeFadeHint() {
+        if (hintFaded) return;
+        hintFaded = true;
+        controlsHint.classList.add('fade');
+        setTimeout(() => { controlsHint.style.display = 'none'; }, 1200);
+    }
+    ['keydown', 'click'].forEach(ev => document.addEventListener(ev, maybeFadeHint, { once: true }));
+
+    // ════════════════════════════════════════════════════════
+    //  KEYBOARD CAMERA ORBIT (mouse drag optional extension)
+    // ════════════════════════════════════════════════════════
+    document.addEventListener('keydown', e => {
+        if (e.code === 'KeyQ') sph.theta -= 0.04;
+        if (e.code === 'KeyR') sph.theta += 0.04;
+    });
+
+    // ════════════════════════════════════════════════════════
+    //  TOUCH / MOBILE — virtual joystick fallback
+    // ════════════════════════════════════════════════════════
+    let touchOrigin = null;
+    threeCanvas.addEventListener('touchstart', e => {
+        const t = e.touches[0];
+        touchOrigin = { x: t.clientX, y: t.clientY };
+    }, { passive: true });
+
+    threeCanvas.addEventListener('touchmove', e => {
+        if (!touchOrigin) return;
+        const t = e.touches[0];
+        const dx = t.clientX - touchOrigin.x;
+        const dy = t.clientY - touchOrigin.y;
+        keys['KeyW'] = dy < -20;
+        keys['KeyS'] = dy >  20;
+        keys['KeyA'] = dx < -20;
+        keys['KeyD'] = dx >  20;
+    }, { passive: true });
+
+    threeCanvas.addEventListener('touchend', () => {
+        touchOrigin = null;
+        keys['KeyW'] = keys['KeyS'] = keys['KeyA'] = keys['KeyD'] = false;
+    }, { passive: true });
 
 });

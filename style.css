@@ -25,99 +25,134 @@ body {
     box-shadow: 0 10px 30px rgba(0,0,0,0.8);
 }
 
-/* ═══════════════════ SCENE ═══════════════════ */
-#game-scene {
+/* ═══════════════════ THREE.JS CANVAS ═══════════════════ */
+#three-canvas {
+    display: block;
+    width: 100%;
     flex-grow: 1;
-    position: relative;
-    height: 82%;
+    cursor: crosshair;
+    touch-action: none;
 }
 
-#background-image {
+/* ═══════════════════ AVATAR ═══════════════════ */
+#player-avatar {
     position: absolute;
-    inset: 0;
-    background-image: url('Gemini_Generated_Image_s48kdss48kdss48k.png');
-    background-size: cover;
-    background-position: center top;
-    z-index: 1;
-    transition: background-position 0.6s ease, filter 0.6s ease;
-}
-
-/* Lower level: Gemini-rendered Sussex Cellar arena (2752×1536 landscape) */
-#game-scene.lower #background-image {
-    opacity: 1;
-    pointer-events: none;
-    background-image: url('Gemini_Generated_Image_njysn4njysn4njys.png');
-    background-size: cover;
-    background-position: center center;
-    filter: brightness(0.95);
-    transition: none;
-}
-
-/* Table mask — ellipse over pit tables, removed when downstairs */
-#table-mask {
-    position: absolute;
-    top: 52%;
-    left: 22%;
-    width: 57%;
-    height: 30%;
-    border-radius: 50%;
-    background: radial-gradient(ellipse at center,
-        rgba(60,30,10,0.82) 0%,
-        rgba(50,25,8,0.65) 60%,
-        transparent 100%);
-    z-index: 3;
-    pointer-events: none;
-    transition: opacity 0.4s;
-}
-
-#game-scene.lower #table-mask { opacity: 0; }
-
-/* ═══════════════════ HOTSPOTS ═══════════════════ */
-.hotspot {
-    position: absolute;
-    cursor: pointer;
-    z-index: 10;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    transition: background-color 0.15s, border-color 0.15s;
-}
-
-.hotspot:hover {
-    background-color: rgba(255,220,120,0.12);
-    border-color: rgba(255,220,120,0.5);
-}
-
-.hotspot.zone:hover { border-color: rgba(100,200,255,0.6); }
-.hotspot.npc:hover  { border-color: rgba(255,160,80,0.7); }
-.hotspot.exit:hover { border-color: rgba(100,255,120,0.6); }
-
-/* Zone label tooltip */
-.hotspot.zone::after {
-    content: attr(data-label);
-    position: absolute;
-    top: -26px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(20,10,5,0.85);
-    color: #f5e8c8;
-    font-size: 0.65rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 3px 8px;
-    border-radius: 4px;
-    white-space: nowrap;
-    opacity: 0;
+    /* left/top/transform set dynamically by JS from 3D projection */
+    transform: translate(-50%, -90%) scale(0.8);
+    transform-origin: bottom center;
+    z-index: 8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     pointer-events: none;
     transition: opacity 0.2s;
 }
-.hotspot.zone:hover::after { opacity: 1; }
 
-/* Lower-only hotspots hidden on upper scene */
-.hotspot.lower-only { display: none; }
-#game-scene.lower .hotspot.lower-only { display: block; }
-#game-scene.lower .hotspot:not(.lower-only) { display: none; }
-/* Keep table-mask children visible */
-#game-scene.lower #table-mask { display: block; }
+#avatar-canvas {
+    display: block;
+    width: 72px;
+    height: 128px;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.75)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    image-rendering: auto;
+}
+
+#player-avatar[data-facing="left"] #avatar-canvas {
+    transform: scaleX(-1);
+}
+
+#avatar-shadow {
+    width: 40px;
+    height: 8px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.45) 0%, transparent 75%);
+    margin-top: -6px;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.avatar-label {
+    font-size: clamp(0.42rem, 0.7vw, 0.6rem);
+    color: #fff;
+    text-shadow: 0 1px 4px #000, 0 0 8px #000;
+    margin-top: 1px;
+    white-space: nowrap;
+    letter-spacing: 0.06em;
+    font-family: 'Georgia', serif;
+    background: rgba(0,0,0,0.35);
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+
+#player-avatar.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ═══════════════════ ZONE BANNER ═══════════════════ */
+#zone-banner {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20,10,4,0.88);
+    border: 1px solid rgba(200,150,60,0.6);
+    border-radius: 10px;
+    padding: 8px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 20;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+#zone-banner.hidden { opacity: 0; pointer-events: none; }
+
+#zone-banner-icon { font-size: 1.3rem; }
+
+#zone-banner-name {
+    color: #e8c880;
+    font-size: 0.9rem;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+}
+
+#zone-banner-hint {
+    color: #a88850;
+    font-size: 0.72rem;
+    margin-left: 4px;
+}
+
+/* ═══════════════════ INTERACT PROMPT ═══════════════════ */
+#interact-prompt {
+    position: absolute;
+    bottom: 22%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20,10,4,0.75);
+    color: #e8c880;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(138,90,40,0.5);
+    z-index: 15;
+    pointer-events: none;
+}
+
+#interact-prompt.hidden { display: none; }
+
+/* ═══════════════════ MINIMAP ═══════════════════ */
+#minimap {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 120px;
+    height: 120px;
+    z-index: 20;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.9;
+}
 
 /* ═══════════════════ UI BAR ═══════════════════ */
 #ui-bar {
@@ -130,6 +165,7 @@ body {
     gap: 2%;
     z-index: 20;
     box-shadow: inset 0 5px 10px rgba(0,0,0,0.2);
+    flex-shrink: 0;
 }
 
 .action-buttons {
@@ -234,13 +270,6 @@ body {
 
 .slot:hover { border-color: #d4a860; }
 
-.ui-decor {
-    font-size: 2rem;
-    color: #f0d890;
-    margin-left: 4px;
-    text-shadow: 0 0 8px rgba(255,220,80,0.8);
-}
-
 #btn-scan-wine {
     background: linear-gradient(135deg, #5a2a10, #9a5820);
     border: 1px solid #c8963c;
@@ -258,7 +287,7 @@ body {
     background: linear-gradient(135deg, #7a3a14, #c8963c);
 }
 
-/* Scanner panel — taller than standard panels */
+/* Scanner panel */
 #scanner-panel {
     width: min(520px, 95%);
     max-height: 88%;
@@ -355,7 +384,7 @@ body {
 
 .panel-close:hover { background: rgba(180,100,40,0.6); }
 
-/* ── Sommelier dialogue ── */
+/* Sommelier dialogue */
 #dialogue-text {
     padding: 20px 22px 8px;
     color: #f0ddb8;
@@ -389,7 +418,7 @@ body {
     border-color: #c8a050;
 }
 
-/* ── Zone panel ── */
+/* Zone panel */
 #zone-panel-icon { font-size: 1.8rem; }
 
 #zone-panel-body {
@@ -442,7 +471,7 @@ body {
     pointer-events: all;
 }
 
-/* ═══════════════════ RESPONSIVE (mobile portrait) ═══════════════════ */
+/* ═══════════════════ RESPONSIVE ═══════════════════ */
 @media (max-aspect-ratio: 1/1) {
     #game-wrapper {
         aspect-ratio: auto;
@@ -450,148 +479,29 @@ body {
         max-width: none;
         border-radius: 0;
     }
-    #game-scene { height: 75vh; }
     #ui-bar { height: 25vh; gap: 3%; }
     .action-buttons button { width: 12vw; height: 12vw; font-size: 0.8rem; }
     .slot { width: 11vw; height: 11vw; font-size: 1.8rem; }
     .panel { width: 95%; max-height: 85%; }
+    #minimap { width: 90px; height: 90px; }
 }
 
-/* ═══════════════════ AVATAR ═══════════════════ */
-#player-avatar {
+/* WASD hint overlay at start */
+#controls-hint {
     position: absolute;
+    bottom: 20%;
     left: 50%;
-    top: 75%;
-    /* transform is set dynamically: translateX(-50%) scale(n) */
-    transform: translateX(-50%) scale(0.8);
-    transform-origin: bottom center;
-    z-index: 8;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    transform: translateX(-50%);
+    background: rgba(20,10,4,0.75);
+    color: #c8a060;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    padding: 6px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(138,90,40,0.4);
+    z-index: 15;
     pointer-events: none;
-    /* transition-duration is overridden per-walk by JS for distance-proportional timing */
-    transition: left 0.55s ease, top 0.55s ease, transform 0.55s ease, opacity 0.2s;
-}
-
-/* Canvas — no frame/box, character lives directly in the scene */
-#avatar-canvas {
-    display: block;
-    /* Base display size — perspective scale applied via transform on parent */
-    width: 72px;
-    height: 128px;
-    /* Drop shadow so character reads against both light and dark backgrounds */
-    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.75)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-    image-rendering: auto;
-}
-
-/* Flip canvas for left-facing direction */
-#player-avatar[data-facing="left"] #avatar-canvas {
-    transform: scaleX(-1);
-}
-
-/* Foot shadow ellipse — grounds character in the scene */
-#avatar-shadow {
-    width: 40px;
-    height: 8px;
-    background: radial-gradient(ellipse, rgba(0,0,0,0.45) 0%, transparent 75%);
-    margin-top: -6px;
-    border-radius: 50%;
-    pointer-events: none;
-}
-
-.avatar-label {
-    font-size: clamp(0.42rem, 0.7vw, 0.6rem);
-    color: #fff;
-    text-shadow: 0 1px 4px #000, 0 0 8px #000;
-    margin-top: 1px;
-    white-space: nowrap;
-    letter-spacing: 0.06em;
-    font-family: 'Georgia', serif;
-    background: rgba(0,0,0,0.35);
-    padding: 1px 5px;
-    border-radius: 3px;
-}
-
-#player-avatar.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* Crosshair cursor anywhere on the walkable scene */
-#game-scene { cursor: crosshair; }
-#game-scene .hotspot { cursor: pointer; }
-
-/* ═══════════════════ LOWER FLOOR SCENE ═══════════════════ */
-/* Background photo is used directly; #lower-scene is overlay-only */
-#lower-scene {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.5s ease;
-}
-
-#game-scene.lower #lower-scene {
     opacity: 1;
+    transition: opacity 1s;
 }
-
-/* Lower room overlay — subtle vignette only, no masking needed with rendered image */
-#lower-room-oval {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.35) 100%);
-    pointer-events: none;
-}
-
-/* Warm ambient floor glow */
-#lower-ambient-light {
-    position: absolute;
-    left: 20%;
-    bottom: 0;
-    width: 60%;
-    height: 30%;
-    border-radius: 50%;
-    background: radial-gradient(ellipse at 50% 80%,
-        rgba(200, 130, 60, 0.18) 0%,
-        transparent 70%);
-    pointer-events: none;
-}
-
-/* Subtle ceiling ring enhancement over photo */
-#lower-ceiling-ring {
-    position: absolute;
-    left: 30%;
-    top: 2%;
-    width: 40%;
-    height: 22%;
-    border-radius: 50%;
-    background: radial-gradient(ellipse at 50% 40%,
-        rgba(255, 220, 160, 0.08) 0%,
-        transparent 70%);
-    border: 1px solid rgba(255, 200, 120, 0.15);
-    pointer-events: none;
-}
-
-/* Left/right edge darken to give depth */
-#lower-rack-left {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 8%;
-    height: 100%;
-    background: linear-gradient(to right, rgba(8,4,2,0.7), transparent);
-    pointer-events: none;
-}
-
-#lower-rack-right {
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 8%;
-    height: 100%;
-    background: linear-gradient(to left, rgba(8,4,2,0.7), transparent);
-    pointer-events: none;
-}
-
+#controls-hint.fade { opacity: 0; }
