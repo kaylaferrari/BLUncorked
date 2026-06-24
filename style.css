@@ -462,51 +462,55 @@ body {
     position: absolute;
     left: 50%;
     top: 75%;
-    transform: translateX(-50%);
+    /* transform is set dynamically: translateX(-50%) scale(n) */
+    transform: translateX(-50%) scale(0.8);
+    transform-origin: bottom center;
     z-index: 8;
     display: flex;
     flex-direction: column;
     align-items: center;
     pointer-events: none;
-    transition: left 0.55s ease, top 0.55s ease, opacity 0.2s;
+    /* transition-duration is overridden per-walk by JS for distance-proportional timing */
+    transition: left 0.55s ease, top 0.55s ease, transform 0.55s ease, opacity 0.2s;
 }
 
-/* ── Video avatar frame ── */
-#avatar-frame {
-    width: clamp(38px, 5.5vw, 80px);
-    height: clamp(72px, 10.5vw, 152px);
-    overflow: hidden;
-    border-radius: 6px;
-    position: relative;
-    /* Subtle drop shadow so character reads against any background */
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+/* Canvas — no frame/box, character lives directly in the scene */
+#avatar-canvas {
+    display: block;
+    /* Base display size — perspective scale applied via transform on parent */
+    width: 72px;
+    height: 128px;
+    /* Drop shadow so character reads against both light and dark backgrounds */
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.75)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    image-rendering: auto;
 }
 
-#avatar-video {
-    /* The character occupies roughly the centre 58% horizontally
-       and top 90% vertically of the 1280×720 frame.
-       We shift and scale to crop out the plain grey margins. */
-    position: absolute;
-    width: 172%;
-    height: 115%;
-    left: -36%;
-    top: -4%;
-    object-fit: cover;
-}
-
-/* Flip video for left-facing direction */
-#player-avatar[data-facing="left"] #avatar-frame {
+/* Flip canvas for left-facing direction */
+#player-avatar[data-facing="left"] #avatar-canvas {
     transform: scaleX(-1);
 }
 
+/* Foot shadow ellipse — grounds character in the scene */
+#avatar-shadow {
+    width: 40px;
+    height: 8px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.45) 0%, transparent 75%);
+    margin-top: -6px;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
 .avatar-label {
-    font-size: clamp(0.45rem, 0.75vw, 0.65rem);
+    font-size: clamp(0.42rem, 0.7vw, 0.6rem);
     color: #fff;
-    text-shadow: 0 1px 3px #000, 0 0 6px #000;
-    margin-top: 3px;
+    text-shadow: 0 1px 4px #000, 0 0 8px #000;
+    margin-top: 1px;
     white-space: nowrap;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     font-family: 'Georgia', serif;
+    background: rgba(0,0,0,0.35);
+    padding: 1px 5px;
+    border-radius: 3px;
 }
 
 #player-avatar.hidden {
@@ -514,8 +518,9 @@ body {
     pointer-events: none;
 }
 
-/* Walk cursor on the scene floor */
-#game-scene { cursor: default; }
+/* Crosshair cursor anywhere on the walkable scene */
+#game-scene { cursor: crosshair; }
+#game-scene .hotspot { cursor: pointer; }
 
 /* ═══════════════════ LOWER FLOOR SCENE ═══════════════════ */
 /* Background photo is used directly; #lower-scene is overlay-only */
