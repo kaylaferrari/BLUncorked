@@ -156,6 +156,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // Facing direction
             if (moveDir.x < -0.3) avatarFacing = 'left';
             else if (moveDir.x > 0.3) avatarFacing = 'right';
+            else if (moveDir.z < -0.3) avatarFacing = 'up';
+            else if (moveDir.z > 0.3) avatarFacing = 'down';
             avatar.setAttribute('data-facing', avatarFacing);
             setAvatarState('walking');
         } else {
@@ -255,6 +257,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (dx < -0.3) avatarFacing = 'left';
         else if (dx > 0.3) avatarFacing = 'right';
+        else if (dz < -0.3) avatarFacing = 'up';
+        else if (dz > 0.3) avatarFacing = 'down';
         avatar.setAttribute('data-facing', avatarFacing);
         setAvatarState('walking');
 
@@ -331,6 +335,52 @@ document.addEventListener("DOMContentLoaded", () => {
     const avatar    = document.getElementById('player-avatar');
     const wrapper   = document.getElementById('game-wrapper');
     let avatarFacing = 'right';
+
+    // ── NPC DOM Sprites ─────────────────────────────────────
+    // Each NPC gets a positioned DOM element projected from its 3D spot position
+    const NPC_CONFIGS = [
+        { id:'sommelier', floor:'upper', pos:[20, 0, 8],  emoji:'🧔', label:'Sommelier', color:'#e8c880' },
+        { id:'corkscrew', floor:'upper', pos:[-22,0,-8],  emoji:'🔩', label:'Corkscrew',  color:'#aaa'    },
+        { id:'bottle',    floor:'upper', pos:[24, 0, 10], emoji:'🍾', label:'',           color:'#c8f080' },
+        { id:'guide',     floor:'lower', pos:[0,  0,  8], emoji:'👤', label:'Guide',      color:'#a8d8f0' },
+    ];
+    const npcEls = {};
+    NPC_CONFIGS.forEach(cfg => {
+        const el = document.createElement('div');
+        el.className = 'npc-sprite';
+        el.id = 'npc-' + cfg.id;
+        el.dataset.floor = cfg.floor;
+        el.innerHTML = \`<span class="npc-emoji">\${cfg.emoji}</span>\${cfg.label ? \`<span class="npc-label" style="color:\${cfg.color}">\${cfg.label}</span>\` : ''}\`;
+        el.style.cssText = 'position:absolute;display:flex;flex-direction:column;align-items:center;pointer-events:none;z-index:7;transform:translate(-50%,-90%);';
+        wrapper.appendChild(el);
+        npcEls[cfg.id] = el;
+    });
+
+    function projectNPCs() {
+        const W = threeCanvas.clientWidth;
+        const H = threeCanvas.clientHeight;
+        const wRect = wrapper.getBoundingClientRect();
+        const cRect = threeCanvas.getBoundingClientRect();
+        NPC_CONFIGS.forEach(cfg => {
+            const el = npcEls[cfg.id];
+            if (!el) return;
+            const onCurrentFloor = cfg.floor === currentScene;
+            if (!onCurrentFloor) { el.style.opacity = '0'; return; }
+            const wp = new THREE.Vector3(cfg.pos[0], 0, cfg.pos[2]);
+            const ndc = wp.clone().project(camera);
+            // Hide if behind camera
+            if (ndc.z > 1) { el.style.opacity = '0'; return; }
+            const sx = (ndc.x + 1) / 2 * W;
+            const sy = (-ndc.y + 1) / 2 * H;
+            const dist = camera.position.distanceTo(wp);
+            const scale = Math.max(0.4, Math.min(2.0, 22 / dist));
+            el.style.left = (cRect.left - wRect.left + sx) + 'px';
+            el.style.top  = (cRect.top  - wRect.top  + sy) + 'px';
+            el.style.transform = \`translate(-50%, -90%) scale(\${scale.toFixed(3)})\`;
+            el.style.opacity = '1';
+            el.style.fontSize = \`\${Math.round(scale * 2.4)}rem\`;
+        });
+    }
 
     function projectAvatar() {
         const worldPos = playerGroup.position.clone();
@@ -465,6 +515,7 @@ document.addEventListener("DOMContentLoaded", () => {
         checkProximity();
         updateCamera(dt);
         projectAvatar();
+        projectNPCs();
         chromaKeyFrame();
         drawMinimap();
         renderer.render(scene3d, camera);
