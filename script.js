@@ -350,7 +350,7 @@ document.addEventListener("DOMContentLoaded", () => {
         el.className = 'npc-sprite';
         el.id = 'npc-' + cfg.id;
         el.dataset.floor = cfg.floor;
-        el.innerHTML = \`<span class="npc-emoji">\${cfg.emoji}</span>\${cfg.label ? \`<span class="npc-label" style="color:\${cfg.color}">\${cfg.label}</span>\` : ''}\`;
+        el.innerHTML = `<span class="npc-emoji">${cfg.emoji}</span>${cfg.label ? `<span class="npc-label" style="color:${cfg.color}">${cfg.label}</span>` : ''}`;
         el.style.cssText = 'position:absolute;display:flex;flex-direction:column;align-items:center;pointer-events:none;z-index:7;transform:translate(-50%,-90%);';
         wrapper.appendChild(el);
         npcEls[cfg.id] = el;
@@ -376,9 +376,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const scale = Math.max(0.4, Math.min(2.0, 22 / dist));
             el.style.left = (cRect.left - wRect.left + sx) + 'px';
             el.style.top  = (cRect.top  - wRect.top  + sy) + 'px';
-            el.style.transform = \`translate(-50%, -90%) scale(\${scale.toFixed(3)})\`;
+            el.style.transform = `translate(-50%, -90%) scale(${scale.toFixed(3)})`;
             el.style.opacity = '1';
-            el.style.fontSize = \`\${Math.round(scale * 2.4)}rem\`;
+            el.style.fontSize = `${Math.round(scale * 2.4)}rem`;
         });
     }
 
