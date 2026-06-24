@@ -561,24 +561,82 @@ document.addEventListener("DOMContentLoaded", () => {
     const SRC_W = Math.round(1280 * 0.64);
     const SRC_H = 720;
 
+    // Offscreen high-res canvas for sampling — we sample at video native res
+    // then downscale to avatar canvas for sharp result
+    const hiCanvas = document.createElement('canvas');
+    hiCanvas.width  = SRC_W;
+    hiCanvas.height = SRC_H;
+    const hiCtx = hiCanvas.getContext('2d', { willReadFrequently: true });
+
     function chromaKeyFrame() {
         if (!ctx || chromaKeyFailed || avatarVideo.readyState < 2) return;
         try {
-            ctx.clearRect(0, 0, avatarCanvas.width, avatarCanvas.height);
-            ctx.drawImage(avatarVideo, SRC_X, SRC_Y, SRC_W, SRC_H, 0, 0, avatarCanvas.width, avatarCanvas.height);
-            const imgData = ctx.getImageData(0, 0, avatarCanvas.width, avatarCanvas.height);
+            // Draw full-res crop to offscreen canvas
+            hiCtx.clearRect(0, 0, SRC_W, SRC_H);
+            hiCtx.drawImage(avatarVideo, SRC_X, SRC_Y, SRC_W, SRC_H, 0, 0, SRC_W, SRC_H);
+
+            // Sample background colour from all four corners (avoids character colour)
+            const corners = hiCtx.getImageData(0, 0, SRC_W, SRC_H);
+            const cd = corners.data;
+            const stride = SRC_W * 4;
+            function sampleCorner(x, y) {
+                const i = (y * SRC_W + x) * 4;
+                return [cd[i], cd[i+1], cd[i+2]];
+            }
+            // Average of 4 corners
+            const samples = [
+                sampleCorner(4, 4),
+                sampleCorner(SRC_W - 5, 4),
+                sampleCorner(4, SRC_H - 5),
+                sampleCorner(SRC_W - 5, SRC_H - 5),
+            ];
+            const bgR = samples.reduce((a,c) => a + c[0], 0) / 4;
+            const bgG = samples.reduce((a,c) => a + c[1], 0) / 4;
+            const bgB = samples.reduce((a,c) => a + c[2], 0) / 4;
+
+            const imgData = corners;
             const d = imgData.data;
+            const W = SRC_W, H = SRC_H;
+            // Pass 1: colour-distance keying against sampled background
+            const KEY_DIST = 38;  // colour distance threshold
+            const FEATHER   = 28; // feather range above threshold
             for (let i = 0; i < d.length; i += 4) {
-                const r = d[i], g = d[i+1], b = d[i+2];
-                const lum = (r + g + b) / 3;
-                const sat = Math.max(r, g, b) - Math.min(r, g, b);
-                // More aggressive removal: higher sat threshold + wider lum range
-                if (sat < 45 && lum > 120) {
-                    const bgStrength = (1 - sat / 45) * Math.min(1, (lum - 120) / 60);
-                    d[i+3] = Math.round((1 - bgStrength) * 255);
+                const dr = d[i]   - bgR;
+                const dg = d[i+1] - bgG;
+                const db = d[i+2] - bgB;
+                const dist = Math.sqrt(dr*dr + dg*dg + db*db);
+                if (dist < KEY_DIST + FEATHER) {
+                    const alpha = dist < KEY_DIST ? 0 : (dist - KEY_DIST) / FEATHER;
+                    d[i+3] = Math.round(alpha * 255);
                 }
             }
-            ctx.putImageData(imgData, 0, 0);
+
+            // Pass 2: alpha erosion — shrink opaque region by 2px to kill fringe
+            const alphas = new Uint8Array(W * H);
+            for (let i = 0; i < d.length; i += 4) alphas[i >> 2] = d[i+3];
+            for (let y = 1; y < H - 1; y++) {
+                for (let x = 1; x < W - 1; x++) {
+                    const idx = y * W + x;
+                    if (alphas[idx] > 0) {
+                        // If any neighbour is transparent, erode this pixel
+                        const minA = Math.min(
+                            alphas[idx - 1], alphas[idx + 1],
+                            alphas[idx - W], alphas[idx + W]
+                        );
+                        if (minA === 0) {
+                            d[(idx) * 4 + 3] = 0;
+                        } else if (minA < 200) {
+                            d[(idx) * 4 + 3] = Math.round(d[(idx) * 4 + 3] * (minA / 255));
+                        }
+                    }
+                }
+            }
+
+            hiCtx.putImageData(imgData, 0, 0);
+
+            // Downscale to avatar canvas (smooth)
+            ctx.clearRect(0, 0, avatarCanvas.width, avatarCanvas.height);
+            ctx.drawImage(hiCanvas, 0, 0, SRC_W, SRC_H, 0, 0, avatarCanvas.width, avatarCanvas.height);
         } catch (e) {
             chromaKeyFailed = true;
             if (avatarCanvas) avatarCanvas.style.display = 'none';
