@@ -105,15 +105,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const u = upperGroup;
 
         // ── Lighting ─────────────────────────────────────
-        u.add(new THREE.AmbientLight(0x3a1a08, 0.7));
-        const sunU = new THREE.DirectionalLight(0xffcc88, 0.5);
-        sunU.position.set(0, 20, 10);
+        u.add(new THREE.AmbientLight(0x7a4020, 1.4));
+        const sunU = new THREE.DirectionalLight(0xffdd99, 1.2);
+        sunU.position.set(5, 20, -5);
         u.add(sunU);
 
         // ── Wood floor ───────────────────────────────────
         const floorU = new THREE.Mesh(
             new THREE.PlaneGeometry(60, 58),
-            new THREE.MeshLambertMaterial({ color: 0x5a3810 })
+            new THREE.MeshLambertMaterial({ color: 0x8a5a22 })
         );
         floorU.rotation.x = -Math.PI / 2;
         u.add(floorU);
@@ -130,37 +130,30 @@ document.addEventListener("DOMContentLoaded", () => {
         // ── Vaulted ceiling (half cylinder, inside visible) ──
         const vaultU = new THREE.Mesh(
             new THREE.CylinderGeometry(13, 13, 60, 22, 1, true, 0, Math.PI),
-            new THREE.MeshLambertMaterial({ color: 0x6a3820, side: THREE.BackSide })
+            new THREE.MeshLambertMaterial({ color: 0x9a5a38, side: THREE.BackSide })
         );
         vaultU.rotation.z = Math.PI / 2;
         vaultU.position.set(0, 13, 0);
         u.add(vaultU);
-        // Flat panel closing the top of the arch
-        const topCap = new THREE.Mesh(
-            new THREE.PlaneGeometry(60, 26),
-            new THREE.MeshLambertMaterial({ color: 0x4a2410, side: THREE.BackSide })
-        );
-        topCap.rotation.x = Math.PI / 2;
-        topCap.position.set(0, 13, 0);
-        u.add(topCap);
+        // (no flat cap — open vault sides let light through)
 
         // ── Walls ─────────────────────────────────────────
         // back wall: height 16, centre y=8
-        u.add(box(62, 16, 0.8, 0x6a4028, 0, 8, -30));
+        u.add(box(62, 16, 0.8, 0x8a5030, 0, 8, -30));
         // side walls: depth 62, centre y=8
-        u.add(box(0.8, 16, 62, 0x5a3820, -29, 8, -1));
-        u.add(box(0.8, 16, 62, 0x5a3820,  29, 8, -1));
+        u.add(box(0.8, 16, 62, 0x7a4828, -29, 8, -1));
+        u.add(box(0.8, 16, 62, 0x7a4828,  29, 8, -1));
         // front wall (split for doors: 6 wide × 10 tall)
-        u.add(box(26, 16, 0.8, 0x6a4028, -17, 8, 28));
-        u.add(box(26, 16, 0.8, 0x6a4028,  17, 8, 28));
-        u.add(box(12, 6, 0.8, 0x6a4028, 0, 13, 28));  // lintel
+        u.add(box(26, 16, 0.8, 0x7a4a32, -17, 8, 35));
+        u.add(box(26, 16, 0.8, 0x7a4a32,  17, 8, 35));
+        u.add(box(12, 6, 0.8, 0x7a4a32, 0, 13, 35));  // lintel
 
         // ── Double doors ──────────────────────────────────
-        u.add(box(5.6, 10, 0.4, 0x3a1a06, -3, 5, 28));
-        u.add(box(5.6, 10, 0.4, 0x3a1a06,  3, 5, 28));
-        u.add(cyl(0.07, 0.07, 0.5, 0xc8963c, -0.5, 4.5, 28.3, 8));
-        u.add(cyl(0.07, 0.07, 0.5, 0xc8963c,  0.5, 4.5, 28.3, 8));
-        u.add(ptLight(0x44ff44, 0.6, 0, 3, 27, 5));
+        u.add(box(5.6, 10, 0.4, 0x3a1a06, -3, 5, 35));
+        u.add(box(5.6, 10, 0.4, 0x3a1a06,  3, 5, 35));
+        u.add(cyl(0.07, 0.07, 0.5, 0xc8963c, -0.5, 4.5, 35.3, 8));
+        u.add(cyl(0.07, 0.07, 0.5, 0xc8963c,  0.5, 4.5, 35.3, 8));
+        u.add(ptLight(0x44ff44, 0.6, 0, 3, 34, 5));
 
         // ── Bar counter (z≈-23) ───────────────────────────
         u.add(box(24, 1.1, 2.4, 0x2a1205, 0, 0.55, -23));   // counter body (centre y=0.55)
@@ -178,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 u.add(cyl(0.05, 0.09, 0.28, c, bi * 2, sy + 1.01, -29.2, 8));
             }
         }
-        u.add(ptLight(0xffaa44, 1.0, 0, 7, -27, 22));
+        u.add(ptLight(0xffaa44, 2.0, 0, 7, -27, 30));
 
         // ── Wine racks (side walls) ────────────────────────
         wineRack(-26, -14, Math.PI / 2, u);
@@ -245,13 +238,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 globe.position.set(cx + Math.cos(ang) * 0.85, 10.6, cz + Math.sin(ang) * 0.85);
                 u.add(globe);
             }
-            u.add(ptLight(0xffdd88, 1.8, cx, 10, cz, 24));
+            u.add(ptLight(0xffdd88, 3.0, cx, 10, cz, 32));
         });
 
         // ── Wall sconces ───────────────────────────────────
         [[-28, 5, -12], [28, 5, -12], [-28, 5, 8], [28, 5, 8]].forEach(([sx, sy, sz]) => {
             u.add(box(0.3, 0.5, 0.5, 0xc8963c, sx, sy, sz));
-            u.add(ptLight(0xffaa55, 0.8, sx < 0 ? sx + 1 : sx - 1, sy, sz, 10));
+            u.add(ptLight(0xffaa55, 1.5, sx < 0 ? sx + 1 : sx - 1, sy, sz, 14));
         });
 
         // ── Sommelier gold floor ring (at x=20, z=8) ──────
@@ -290,8 +283,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const lo = lowerGroup;
 
         // ── Lighting ─────────────────────────────────────
-        lo.add(new THREE.AmbientLight(0x180e06, 0.7));
-        lo.add(ptLight(0xff8833, 0.9, 0, 7, 0, 30));
+        lo.add(new THREE.AmbientLight(0x503818, 1.2));
+        lo.add(ptLight(0xff8833, 2.5, 0, 7, 0, 40));
 
         // ── Stone floor ───────────────────────────────────
         const floorL = new THREE.Mesh(
@@ -407,7 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── Player group (invisible geometry — just a position anchor) ──
     const playerGroup = new THREE.Group();
-    playerGroup.position.set(0, 0, 8);
+    playerGroup.position.set(0, 0, 0);
     scene3d.add(playerGroup);
 
     // ════════════════════════════════════════════════════════
@@ -441,7 +434,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ════════════════════════════════════════════════════════
     //  CAMERA — spherical orbit with smooth follow
     // ════════════════════════════════════════════════════════
-    const sph = { theta: 0, phi: 1.15, r: 22 };
+    const sph = { theta: 0, phi: 0.92, r: 18 };
     const CAM_K = 4.5;
     let camBase = new THREE.Vector3();
     camBase.copy(playerGroup.position);
@@ -935,7 +928,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (target === 'lower') {
                 playerGroup.position.set(0, 0, -2);
             } else {
-                playerGroup.position.set(0, 0, 12);
+                playerGroup.position.set(0, 0, 4);
             }
             camBase.copy(playerGroup.position);
 
