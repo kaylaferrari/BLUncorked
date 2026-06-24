@@ -21,6 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const texLoader = new THREE.TextureLoader();
     const upperBgTex = texLoader.load('Gemini_Generated_Image_s48kdss48kdss48k.png');
     const lowerBgTex = texLoader.load('Gemini_Generated_Image_njysn4njysn4njys.png');
+    // Enable UV offset for background panning
+    upperBgTex.wrapS = upperBgTex.wrapT = THREE.ClampToEdgeWrapping;
+    lowerBgTex.wrapS = lowerBgTex.wrapT = THREE.ClampToEdgeWrapping;
     scene3d.background = upperBgTex;
 
     // ── Floor groups (all geometry invisible — bg image is the visual) ──
@@ -95,9 +98,32 @@ document.addEventListener("DOMContentLoaded", () => {
         camera.lookAt(SCENE_CENTER.x, SCENE_CENTER.y + 1.2, SCENE_CENTER.z);
     }
 
+    // ── Background parallax pan ─────────────────────────────
+    function panBackground() {
+        // Shift UV so background scrolls as player walks — gives 2.5D depth feel
+        // Range: player moves ±28 X → tex offset ±0.08 (subtle pan)
+        const bounds = { w: 28, d: 30 };
+        const tx = (playerGroup.position.x / bounds.w) * 0.07;
+        const tz = (playerGroup.position.z / bounds.d) * 0.04;
+        const tex = currentScene === 'upper' ? upperBgTex : lowerBgTex;
+        tex.offset.set(-tx, tz);
+    }
+
     // ════════════════════════════════════════════════════════
     //  WASD MOVEMENT
     // ════════════════════════════════════════════════════════
+    // Prop collision radii (player can't walk through solid objects)
+    const PROP_COLLIDERS = [
+        { pos:[ 24, 0, 10], r: 2.5 }, // Glowing Bottle
+        { pos:[-22, 0, -8], r: 2.5 }, // Giant Corkscrew
+    ];
+    function collidesWithProp(pos) {
+        for (const c of PROP_COLLIDERS) {
+            if (Math.hypot(pos.x - c.pos[0], pos.z - c.pos[2]) < c.r) return true;
+        }
+        return false;
+    }
+
     const keys = {};
     const MOVE_SPEED = 8;
     const moveDir = new THREE.Vector3();
@@ -137,9 +163,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 newPos.x = Math.max(bounds.minX, Math.min(bounds.maxX, newPos.x));
                 newPos.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, newPos.z));
                 const inPit = Math.hypot(newPos.x / 9, (newPos.z - 4) / 9) < 1;
-                if (!inPit) {
+                if (!inPit && !collidesWithProp(newPos)) {
                     playerGroup.position.copy(newPos);
-                } else {
+                } else if (inPit) {
                     // Push back toward player's current position (don't freeze them)
                     const fromPitX = playerGroup.position.x - 0;
                     const fromPitZ = playerGroup.position.z - 4;
@@ -150,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 newPos.x = Math.max(bounds.minX, Math.min(bounds.maxX, newPos.x));
                 newPos.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, newPos.z));
-                playerGroup.position.copy(newPos);
+                if (!collidesWithProp(newPos)) playerGroup.position.copy(newPos);
             }
 
             // Facing direction
@@ -253,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const speed = MOVE_SPEED * dt;
         const nx = playerGroup.position.x + (dx/dist) * speed;
         const nz = playerGroup.position.z + (dz/dist) * speed;
-        playerGroup.position.set(nx, 0, nz);
+        if (!collidesWithProp({ x: nx, z: nz })) playerGroup.position.set(nx, 0, nz);
 
         if (dx < -0.3) avatarFacing = 'left';
         else if (dx > 0.3) avatarFacing = 'right';
@@ -514,6 +540,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         checkProximity();
         updateCamera(dt);
+        panBackground();
         projectAvatar();
         projectNPCs();
         chromaKeyFrame();
@@ -537,6 +564,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function chromaKeyFrame() {
         if (!ctx || chromaKeyFailed || avatarVideo.readyState < 2) return;
         try {
+            ctx.clearRect(0, 0, avatarCanvas.width, avatarCanvas.height);
             ctx.drawImage(avatarVideo, SRC_X, SRC_Y, SRC_W, SRC_H, 0, 0, avatarCanvas.width, avatarCanvas.height);
             const imgData = ctx.getImageData(0, 0, avatarCanvas.width, avatarCanvas.height);
             const d = imgData.data;
@@ -544,8 +572,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 const r = d[i], g = d[i+1], b = d[i+2];
                 const lum = (r + g + b) / 3;
                 const sat = Math.max(r, g, b) - Math.min(r, g, b);
-                if (sat < 28 && lum > 140) {
-                    const bgStrength = (1 - sat / 28) * Math.min(1, (lum - 140) / 45);
+                // More aggressive removal: higher sat threshold + wider lum range
+                if (sat < 45 && lum > 120) {
+                    const bgStrength = (1 - sat / 45) * Math.min(1, (lum - 120) / 60);
                     d[i+3] = Math.round((1 - bgStrength) * 255);
                 }
             }
