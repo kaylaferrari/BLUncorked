@@ -42,14 +42,14 @@ body {
     transition: background-position 0.6s ease, filter 0.6s ease;
 }
 
-/* Lower level: use Sussex Cellar photo, cropped to top (hides chairs) */
+/* Lower level: Gemini-rendered Sussex Cellar arena (2752×1536 landscape) */
 #game-scene.lower #background-image {
     opacity: 1;
     pointer-events: none;
-    background-image: url('sussex-cellar.png');
+    background-image: url('Gemini_Generated_Image_njysn4njysn4njys.png');
     background-size: cover;
-    background-position: center top;
-    filter: brightness(0.92);
+    background-position: center center;
+    filter: brightness(0.95);
     transition: none;
 }
 
@@ -518,20 +518,11 @@ body {
     opacity: 1;
 }
 
-/* Chair/table mask — fades bottom of photo to dark floor */
+/* Lower room overlay — subtle vignette only, no masking needed with rendered image */
 #lower-room-oval {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 52%;
-    background: linear-gradient(
-        to bottom,
-        transparent 0%,
-        rgba(18, 10, 4, 0.55) 35%,
-        rgba(14, 8, 3, 0.88) 65%,
-        rgba(10, 5, 2, 0.98) 100%
-    );
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.35) 100%);
     pointer-events: none;
 }
 
