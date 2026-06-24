@@ -13,6 +13,18 @@
         <div id="game-scene">
             <div id="background-image"></div>
 
+            <!-- ── LOWER FLOOR CSS SCENE (visible only when .lower) ── -->
+            <div id="lower-scene">
+                <div id="lower-room-oval"></div>
+                <div id="lower-ambient-light"></div>
+                <div id="lower-ceiling-ring"></div>
+                <div id="lower-rack-left"></div>
+                <div id="lower-rack-right"></div>
+                <div id="lower-rack-left-bottles"></div>
+                <div id="lower-rack-right-bottles"></div>
+                <div id="lower-floor-gradient"></div>
+            </div>
+
             <!-- Upper level: table mask over pit opening -->
             <div id="table-mask"></div>
 
@@ -70,6 +82,12 @@
             <div class="hotspot zone lower-only" id="zone-vintage-lower"
                  style="top:20%; left:70%; width:25%; height:55%;"
                  data-scene="lower" data-zone="vintage" data-label="The Vintage Wall"></div>
+
+            <!-- ── PLAYER AVATAR ── -->
+            <div id="player-avatar" data-facing="right">
+                <div class="avatar-body"></div>
+                <div class="avatar-label">You</div>
+            </div>
         </div>
 
         <!-- ═══ UI BAR ═══ -->

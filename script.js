@@ -9,23 +9,25 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentScene  = 'upper';
     let currentVerb   = 'look';
     let inventory     = [];
-    let dialogueNode  = null;
+    let avatarX       = 50;
+    let avatarY       = 75;
+    let avatarFacing  = 'right';
 
     // ── DOM refs ───────────────────────────────────────────
-    const scene         = document.getElementById('game-scene');
-    const bgImage       = document.getElementById('background-image');
-    const dialogueBox   = document.getElementById('dialogue-box');
-    const dialoguePanel = document.getElementById('dialogue-panel');
-    const dialogueText  = document.getElementById('dialogue-text');
+    const scene           = document.getElementById('game-scene');
+    const dialogueBox     = document.getElementById('dialogue-box');
+    const dialoguePanel   = document.getElementById('dialogue-panel');
+    const dialogueText    = document.getElementById('dialogue-text');
     const dialogueChoices = document.getElementById('dialogue-choices');
-    const zonePanel     = document.getElementById('zone-panel');
+    const zonePanel       = document.getElementById('zone-panel');
     const zonePanelTitle  = document.getElementById('zone-panel-title');
     const zonePanelIcon   = document.getElementById('zone-panel-icon');
     const zonePanelBody   = document.getElementById('zone-panel-body');
-    const overlay       = document.getElementById('transition-overlay');
-    const floorLabel    = document.getElementById('floor-label');
-    const btnUp         = document.getElementById('btn-up');
-    const btnDown       = document.getElementById('btn-down');
+    const overlay         = document.getElementById('transition-overlay');
+    const floorLabel      = document.getElementById('floor-label');
+    const btnUp           = document.getElementById('btn-up');
+    const btnDown         = document.getElementById('btn-down');
+    const avatar          = document.getElementById('player-avatar');
 
     // ══════════════════════════════════════════════════════
     //  ZONE CONTENT
@@ -59,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <li><strong>Retail Media</strong> — shelf to screen</li>
                     <li><strong>Analytics</strong> — the engine behind all of it</li>
                 </ul>
-                <p style="font-size:0.82rem; color:#b8a070">Content from practice teams pending. Drop copy here.</p>`
+                <p style="font-size:0.82rem; color:#b8a070">Content from practice teams pending.</p>`
         },
         casestudies: {
             icon: '📋',
@@ -72,8 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <li><strong>Halo</strong> — cross-channel attribution modelling</li>
                     <li><strong>Insight Engine</strong> — automated performance reporting</li>
                 </ul>
-                <p>Each tool was built to solve a problem clients actually had — not a problem worth patenting.</p>
-                <p style="font-size:0.82rem; color:#b8a070">Full case study assets pending from relevant practice leads.</p>`
+                <p style="font-size:0.82rem; color:#b8a070">Full case study assets pending from practice leads.</p>`
         },
         vintage: {
             icon: '📅',
@@ -107,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <li>🥈 Most Innovative Agency</li>
                     <li>🥇 Best Places to Work — Global</li>
                 </ul>
-                <p style="font-size:0.82rem; color:#b8a070">Full awards list pending from Marketing team.</p>`
+                <p style="font-size:0.82rem; color:#b8a070">Full awards list pending from Marketing.</p>`
         }
     };
 
@@ -158,19 +159,108 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // ══════════════════════════════════════════════════════
+    //  WALKABLE AREA
+    // ══════════════════════════════════════════════════════
+    function isWalkable(xPct, yPct) {
+        if (currentScene === 'upper') {
+            // Top wall exclusion — left platform is elevated
+            const topBoundary = xPct < 25 ? 52 : 42;
+            if (yPct < topBoundary) return false;
+            if (yPct > 92) return false;
+
+            // Oval pit (hotspot: top:50% left:20% w:60% h:32%)
+            // Ellipse center = (50, 66), rx = 30, ry = 16
+            if (Math.pow((xPct - 50) / 30, 2) + Math.pow((yPct - 66) / 16, 2) < 1) return false;
+
+            return true;
+        }
+
+        if (currentScene === 'lower') {
+            // Room boundary oval
+            if (Math.pow((xPct - 50) / 44, 2) + Math.pow((yPct - 55) / 40, 2) >= 1) return false;
+            // Glass ceiling ring exclusion (matches #cellar-up hotspot)
+            if (Math.pow((xPct - 50) / 20, 2) + Math.pow((yPct - 14) / 9, 2) < 1) return false;
+            return true;
+        }
+
+        return false;
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  AVATAR MOVEMENT
+    // ══════════════════════════════════════════════════════
+    function moveAvatar(xPct, yPct) {
+        if (xPct < avatarX - 0.5) avatarFacing = 'left';
+        else if (xPct > avatarX + 0.5) avatarFacing = 'right';
+
+        avatarX = xPct;
+        avatarY = yPct;
+
+        avatar.setAttribute('data-facing', avatarFacing);
+        avatar.style.left      = xPct + '%';
+        avatar.style.top       = yPct + '%';
+        avatar.style.transform = 'translateX(-50%)';
+    }
+
+    function placeAvatar(xPct, yPct) {
+        avatarX = xPct;
+        avatarY = yPct;
+        // Instant reposition (no transition) — used on scene switch
+        avatar.style.transition = 'none';
+        avatar.style.left       = xPct + '%';
+        avatar.style.top        = yPct + '%';
+        avatar.style.transform  = 'translateX(-50%)';
+        // Re-enable transition after a frame
+        requestAnimationFrame(() => {
+            avatar.style.transition = '';
+        });
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  SCENE CLICK — WALK TO POINT
+    // ══════════════════════════════════════════════════════
+    scene.addEventListener('click', (e) => {
+        // Ignore if a hotspot or panel consumed this
+        if (e.target !== scene && e.target.closest('.hotspot, .panel, #ui-bar')) return;
+
+        const rect = scene.getBoundingClientRect();
+        const xPct = ((e.clientX - rect.left)  / rect.width)  * 100;
+        const yPct = ((e.clientY - rect.top)    / rect.height) * 100;
+
+        if (!isWalkable(xPct, yPct)) {
+            showMessage("You can't walk there.");
+            return;
+        }
+
+        moveAvatar(xPct, yPct);
+    });
+
+    // ══════════════════════════════════════════════════════
     //  SCENE MANAGEMENT
     // ══════════════════════════════════════════════════════
     function goToScene(target) {
         if (target === currentScene) return;
+        avatar.classList.add('hidden');
         overlay.classList.add('active');
+
         setTimeout(() => {
             currentScene = target;
             scene.className = target === 'lower' ? 'lower' : '';
             floorLabel.textContent = target === 'lower' ? 'Sussex Cellar' : 'Upper Bar';
             btnUp.disabled   = (target === 'upper');
             btnDown.disabled = (target === 'lower');
+
+            // Reposition avatar to safe starting point on new floor
+            if (target === 'lower') {
+                placeAvatar(50, 68);
+            } else {
+                placeAvatar(50, 75);
+            }
+
             overlay.classList.remove('active');
             closeAllPanels();
+
+            setTimeout(() => avatar.classList.remove('hidden'), 100);
         }, 350);
     }
 
@@ -194,18 +284,16 @@ document.addEventListener("DOMContentLoaded", () => {
     //  HOTSPOT ROUTING
     // ══════════════════════════════════════════════════════
     document.querySelectorAll('.hotspot').forEach(spot => {
-        spot.addEventListener('click', () => {
-            // Only fire hotspots for current scene
+        spot.addEventListener('click', (e) => {
+            e.stopPropagation(); // prevent walk-to triggering
+
             if (spot.dataset.scene && spot.dataset.scene !== currentScene) return;
 
             const { target, zone, goto } = spot.dataset;
-            const type = spot.classList[1]; // prop | exit | npc | item | zone
+            const type = spot.classList[1];
 
-            // Zone tapped — open content panel regardless of verb
-            if (zone) { openZonePanel(zone); return; }
-
-            // Floor navigation
-            if (goto) { goToScene(goto); return; }
+            if (zone)  { openZonePanel(zone); return; }
+            if (goto)  { goToScene(goto);     return; }
 
             handleAction(currentVerb, target, type, spot);
         });
@@ -215,10 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
     //  INTERACTION LOGIC
     // ══════════════════════════════════════════════════════
     function handleAction(verb, target, type, el) {
-        // NPC talk always opens dialogue panel
-        if (verb === 'talk' && type === 'npc') {
-            openDialogue(target); return;
-        }
+        if (verb === 'talk' && type === 'npc') { openDialogue(target); return; }
 
         let text = '';
         switch (verb) {
@@ -239,13 +324,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 text = `You talk to the ${target}. Silence.`;
                 break;
             case 'use':
-                if (type === 'exit') {
-                    goToScene('lower'); return;
-                } else if (target === 'Giant Corkscrew') {
-                    text = "You'd need a very large bottle.";
-                } else {
-                    text = "You're not sure how to use that right now.";
-                }
+                if (type === 'exit') { goToScene('lower'); return; }
+                if (target === 'Giant Corkscrew') text = "You'd need a very large bottle.";
+                else text = "You're not sure how to use that right now.";
                 break;
         }
         showMessage(text);
@@ -253,13 +334,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function lookText(target) {
         const lines = {
-            'Lower Cellar':   "Through the glass you can see the Sussex Cellar below. A private space — warm light, wine walls. Click the pit or use the floor arrows to go down.",
-            'Giant Corkscrew':"An oversized antique brass corkscrew. Imposing. Probably Art Deco.",
-            'Glowing Bottle': "It pulses with an eerie green light. The label reads: Founder's Reserve, 2012.",
-            'Double Doors':   "Heavy wooden doors. A green arrow suggests the way out — or the way in.",
-            'Sommelier':      "A distinguished figure with a magnificent moustache. He carries himself like someone who has rejected many wines.",
-            'Ceiling Opening':"The circular glass opening you came down through. The upper bar is visible above.",
-            'Guide':          "A member of the BL team stationed downstairs. They look helpful.",
+            'Lower Cellar':    "Through the glass you can see the Sussex Cellar below. Click the pit or use the floor arrows to go down.",
+            'Giant Corkscrew': "An oversized antique brass corkscrew. Imposing. Probably Art Deco.",
+            'Glowing Bottle':  "It pulses with an eerie green light. The label reads: Founder's Reserve, 2012.",
+            'Double Doors':    "Heavy wooden doors. A green arrow suggests the way out — or the way in.",
+            'Sommelier':       "A distinguished figure with a magnificent moustache. He carries himself like someone who has rejected many wines.",
+            'Ceiling Opening': "The circular glass opening you came down through. The upper bar is visible above.",
+            'Guide':           "A member of the BL team stationed downstairs. They look helpful.",
         };
         return lines[target] || `You examine the ${target} carefully.`;
     }
@@ -272,16 +353,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (npcName === 'Sommelier') {
             showDialogueNode('start');
         } else {
-            showDialogueNode(null);
             dialogueText.textContent = `"Hello." The ${npcName} smiles warmly but says nothing more.`;
             dialogueChoices.innerHTML = `<button class="choice-btn" onclick="document.getElementById('dialogue-panel').classList.add('hidden')">Goodbye.</button>`;
         }
-        document.getElementById('dialogue-panel').classList.remove('hidden');
+        dialoguePanel.classList.remove('hidden');
     }
 
     function showDialogueNode(nodeId) {
         if (!nodeId || !DIALOGUE[nodeId]) {
-            document.getElementById('dialogue-panel').classList.add('hidden');
+            dialoguePanel.classList.add('hidden');
             return;
         }
         const node = DIALOGUE[nodeId];
@@ -325,7 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ══════════════════════════════════════════════════════
-    //  PANEL CLOSE BUTTONS
+    //  PANEL CLOSE
     // ══════════════════════════════════════════════════════
     document.querySelectorAll('.panel-close').forEach(btn => {
         btn.addEventListener('click', () => {
