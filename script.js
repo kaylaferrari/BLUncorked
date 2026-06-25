@@ -679,11 +679,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentVerb  = 'look';
     let inventory    = [];
 
-    const overlay      = document.getElementById('transition-overlay');
-    const floorLabel   = document.getElementById('floor-label');
-    const btnUp        = document.getElementById('btn-up');
-    const btnDown      = document.getElementById('btn-down');
-    const zoneBanner   = document.getElementById('zone-banner');
+    const overlay    = document.getElementById('transition-overlay');
+    const zoneBanner = document.getElementById('zone-banner');
+    const scannerPanel = document.getElementById('scanner-panel');
 
     function goToScene(target) {
         if (target === currentScene) return;
@@ -697,11 +695,6 @@ document.addEventListener("DOMContentLoaded", () => {
             lowerGroup.visible = target === 'lower';
             scene3d.background = target === 'lower' ? lowerBgTex : upperBgTex;
 
-            floorLabel.textContent = target === 'lower' ? 'Sussex Cellar' : 'Upper Bar';
-            btnUp.disabled   = target === 'upper';
-            btnDown.disabled = target === 'lower';
-
-            // Teleport player to arrival position
             if (target === 'lower') {
                 playerGroup.position.set(0, 0, -2);
             } else {
@@ -717,47 +710,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 350);
     }
 
-    btnUp.addEventListener('click',   () => goToScene('upper'));
-    btnDown.addEventListener('click', () => goToScene('lower'));
-
-    // Wine scanner
-    const scannerPanel = document.getElementById('scanner-panel');
-    document.getElementById('btn-scan-wine').addEventListener('click', () => {
-        if (scannerPanel.classList.contains('hidden')) {
-            closeAllPanels();
-            scannerPanel.classList.remove('hidden');
-        } else {
-            scannerPanel.classList.add('hidden');
-        }
-    });
-
-    // ════════════════════════════════════════════════════════
-    //  VERB BUTTONS
-    // ════════════════════════════════════════════════════════
-    const actionButtons = document.querySelectorAll('.action-buttons button');
-    actionButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            actionButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentVerb = btn.id.replace('btn-', '');
-            hideDialogueBox();
-
-            // Apply verb to nearest proximity spot
-            if (proximitySpot) {
-                const sp = proximitySpot;
-                if (currentVerb === 'talk' && sp.npc) {
-                    openDialogue(sp.npc);
-                } else if (currentVerb === 'use' && sp.goto) {
-                    goToScene(sp.goto);
-                } else {
-                    const target = sp.item || sp.prop || sp.label;
-                    const type   = sp.item ? 'item' : sp.npc ? 'npc' : sp.prop ? 'prop' : 'zone';
-                    handleAction(currentVerb, target, type, sp);
-                }
-            }
-        });
-    });
-
     // ════════════════════════════════════════════════════════
     //  INTERACTION LOGIC
     // ════════════════════════════════════════════════════════
@@ -771,7 +723,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 break;
             case 'take':
                 if (type === 'item') {
-                    addToInventory(target, sp);
+                    addToInventory(target);
                     text = `You carefully take the ${target}.`;
                 } else if (target === 'Giant Corkscrew') {
                     text = "It's bolted to the floor. Decorative, or a warning.";
@@ -984,14 +936,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // ════════════════════════════════════════════════════════
     //  INVENTORY
     // ════════════════════════════════════════════════════════
-    function addToInventory(itemName, sp) {
+    function addToInventory(itemName) {
         if (inventory.includes(itemName)) return;
         inventory.push(itemName);
-        const slots = document.querySelectorAll('.slot');
-        const idx = inventory.length - 1;
-        if (idx < slots.length) {
-            slots[idx].textContent = { 'Glowing Bottle': '🍾' }[itemName] || '📦';
-        }
     }
 
     // ════════════════════════════════════════════════════════
