@@ -66,13 +66,11 @@ document.addEventListener("DOMContentLoaded", () => {
             { id:'bottle',       label:'Glowing Bottle',       icon:'🍾', floor:'upper', item:'Glowing Bottle', pos:[24, 0, 10], radius:4 },
             { id:'corkscrew',    label:'Giant Corkscrew',      icon:'🔩', floor:'upper', prop:'Giant Corkscrew', pos:[-22,0,-8], radius:5 },
             { id:'doors',        label:'Double Doors',         icon:'🚪', floor:'upper', prop:'Double Doors', pos:[0,  0, 22], radius:6  },
-            { id:'pit',          label:'Lower Cellar',         icon:'⬇',  floor:'upper', goto:'lower',       pos:[ 0,  0,  4], radius:9  },
         ],
         lower: [
             { id:'awards',       label:'Awards Alcove',        icon:'🏆', floor:'lower', zone:'awards',      pos:[-18, 0,  0], radius:8  },
             { id:'guide',        label:'Guide',                icon:'👤', floor:'lower', npc:'Guide',        pos:[ 0,  0,  8], radius:5  },
             { id:'vintage-lower',label:'The Vintage Wall',     icon:'📅', floor:'lower', zone:'vintage',     pos:[18,  0,  0], radius:8  },
-            { id:'cellar-up',    label:'Upper Bar',            icon:'⬆',  floor:'lower', goto:'upper',       pos:[ 0,  0, -8], radius:6  },
         ]
     };
 
@@ -699,7 +697,7 @@ document.addEventListener("DOMContentLoaded", () => {
             scene3d.background = target === 'lower' ? lowerBgTex : upperBgTex;
 
             if (target === 'lower') {
-                playerGroup.position.set(0, 0, -2);
+                playerGroup.position.set(0, 0, 8);
             } else {
                 playerGroup.position.set(0, 0, 8);
             }
