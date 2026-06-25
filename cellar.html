@@ -111,6 +111,17 @@ canvas{display:block}
   <button id="dlg-close">Close</button>
 </div>
 
+<script>
+window.addEventListener('error', function(e){
+  var p = document.querySelector('#loader p');
+  if(p) p.textContent = 'Error: ' + e.message;
+});
+window.addEventListener('unhandledrejection', function(e){
+  var p = document.querySelector('#loader p');
+  if(p) p.textContent = 'Error: ' + e.reason;
+});
+</script>
+
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls }   from 'three/addons/controls/OrbitControls.js';
@@ -161,9 +172,9 @@ composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0
 
 // ── env map ───────────────────────────────────────────────────────────
 const pmrem=new THREE.PMREMGenerator(renderer);
-pmrem.compileEquirectangularShader();
 const envTex=pmrem.fromScene(new RoomEnvironment()).texture;
 scene.environment=envTex;
+pmrem.dispose();
 
 // ─────────────────────────────────────────────────────────────────────
 // LIGHTING
@@ -985,16 +996,6 @@ const fillEl=document.getElementById('fill');
 let si=0; const steps=[10,25,40,55,70,85,95,100];
 const iv=setInterval(()=>{if(si<steps.length) fillEl.style.width=steps[si++]+'%'; else clearInterval(iv);},80);
 setTimeout(()=>{loaderEl.style.opacity='0';setTimeout(()=>loaderEl.remove(),900);},900);
-
-// surface any init errors visibly instead of silently freezing
-window.addEventListener('error', e=>{
-  const p=document.getElementById('loader')?.querySelector('p');
-  if(p) p.textContent='Error: '+e.message;
-});
-window.addEventListener('unhandledrejection', e=>{
-  const p=document.getElementById('loader')?.querySelector('p');
-  if(p) p.textContent='Error: '+e.reason;
-});
 
 animate();
 </script>
