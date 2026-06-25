@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── Player group (invisible geometry — just a position anchor) ──
     const playerGroup = new THREE.Group();
-    playerGroup.position.set(14, 0, 10);
+    playerGroup.position.set(16, 0, 10);
     scene3d.add(playerGroup);
 
     // ════════════════════════════════════════════════════════
