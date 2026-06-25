@@ -22,25 +22,6 @@ canvas{display:block}
   opacity:.7;pointer-events:none;text-shadow:0 0 12px rgba(200,164,106,.5);
   white-space:nowrap;
 }
-#modeBtn{
-  position:fixed;top:20px;right:140px;
-  background:rgba(200,164,106,.15);color:#c8a46a;
-  border:1px solid rgba(200,164,106,.4);font-family:'Georgia',serif;
-  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
-  padding:8px 18px;cursor:pointer;backdrop-filter:blur(4px);
-  border-radius:2px;z-index:10;transition:background .2s;
-}
-#modeBtn:hover{background:rgba(200,164,106,.3)}
-#freeCamBtn{
-  position:fixed;top:20px;right:20px;
-  background:rgba(200,164,106,.15);color:#c8a46a;
-  border:1px solid rgba(200,164,106,.4);font-family:'Georgia',serif;
-  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
-  padding:8px 18px;cursor:pointer;backdrop-filter:blur(4px);
-  border-radius:2px;z-index:10;transition:background .2s;
-}
-#freeCamBtn:hover{background:rgba(200,164,106,.3)}
-#freeCamBtn.active{background:rgba(200,164,106,.35);border-color:rgba(200,164,106,.9)}
 #logo{
   position:fixed;top:20px;left:24px;color:#c8a46a;
   font-size:15px;letter-spacing:.25em;text-transform:uppercase;
@@ -101,9 +82,7 @@ canvas{display:block}
   <p>Preparing the cellar&hellip;</p>
 </div>
 <div id="logo">BL Uncorked</div>
-<div id="ui">Click to move &middot; Drag to orbit &middot; Scroll to zoom</div>
-<button id="modeBtn">Walk Mode</button>
-<button id="freeCamBtn">Free Camera</button>
+<div id="ui">Click to move</div>
 <div id="hotlabel"></div>
 <div id="dialog">
   <div id="dlg-speaker"></div>
@@ -124,7 +103,6 @@ window.addEventListener('unhandledrejection', function(e){
 
 <script type="module">
 import * as THREE from 'three';
-import { OrbitControls }   from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer }  from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass }      from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -151,19 +129,15 @@ document.body.appendChild(renderer.domElement);
 // ── scene + camera ────────────────────────────────────────────────────
 const scene=new THREE.Scene();
 scene.background=new THREE.Color('#2A1205');
-scene.fog=new THREE.FogExp2('#2A1205',0.022);
 
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.1,80);
-camera.position.set(5,2.2,9);
-camera.lookAt(0,1.8,0);
-
-// ── orbit ─────────────────────────────────────────────────────────────
-const orbit=new OrbitControls(camera,renderer.domElement);
-orbit.target.set(0,1.8,0);
-orbit.enableDamping=true; orbit.dampingFactor=0.06;
-orbit.minDistance=1.5; orbit.maxDistance=18;
-orbit.maxPolarAngle=Math.PI*.72; orbit.minPolarAngle=Math.PI*.05;
-orbit.enabled=false; // game camera active by default
+const ISO_DX=11,ISO_DY=11,ISO_DZ=11;
+let isoFrustum=16;
+const isoAspect=()=>innerWidth/innerHeight;
+const camera=new THREE.OrthographicCamera(
+  isoFrustum*isoAspect()/-2, isoFrustum*isoAspect()/2,
+  isoFrustum/2, isoFrustum/-2, 0.1, 200);
+camera.position.set(4+ISO_DX, ISO_DY, 8+ISO_DZ);
+camera.lookAt(4, 0, 8);
 
 // ── post-processing ───────────────────────────────────────────────────
 const composer=new EffectComposer(renderer);
@@ -448,18 +422,6 @@ const blPanel=new THREE.Mesh(new THREE.PlaneGeometry(SHELF_W,2.5),
 blPanel.position.set(2,2.2,BZ-.01);scene.add(blPanel);
 const barPL=new THREE.PointLight('#FFF3C4',2.5,10);
 barPL.position.set(2,2.8,BZ+1.5);scene.add(barPL);
-const frMat=new THREE.MeshStandardMaterial({color:'#1C1C1C',roughness:.6,metalness:.45});
-const wgMat=new THREE.MeshStandardMaterial({color:'#6A8A9A',transparent:true,opacity:.3,roughness:.08});
-[[-3.5,2.0],[7.0,2.0]].forEach(([wx,wy])=>{
-  const wfr=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.5,.08),frMat);
-  wfr.position.set(wx,wy,BZ+.01);scene.add(wfr);
-  const wpn=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.4),wgMat);
-  wpn.position.set(wx,wy,BZ+.06);scene.add(wpn);
-  ['h','v'].forEach(d=>{
-    const wdv=new THREE.Mesh(d==='h'?new THREE.BoxGeometry(1.8,.05,.06):new THREE.BoxGeometry(.05,1.4,.06),frMat);
-    wdv.position.set(wx,wy,BZ+.055);scene.add(wdv);
-  });
-});
 
 // ═════════════════════════════════════════════════════════════════════
 // GAME SYSTEMS
@@ -712,14 +674,13 @@ function updatePlayer(dt){
 // ─────────────────────────────────────────────────────────────────────
 // GAME CAMERA
 // ─────────────────────────────────────────────────────────────────────
-const GAME_CAM_OFFSET=new THREE.Vector3(3,5.5,7);
-let freeCam=false;
 function updateGameCamera(dt){
-  const target=player.mesh.group.position.clone().add(GAME_CAM_OFFSET);
-  camera.position.lerp(target,dt*1.8);
-  const lookAt=player.mesh.group.position.clone().add(new THREE.Vector3(0,1.2,0));
-  camera.lookAt(lookAt);
-  orbit.target.lerp(lookAt,dt*1.8);
+  const pp=player.pos;
+  const tx=pp.x+ISO_DX, tz=pp.z+ISO_DZ;
+  camera.position.x+=(tx-camera.position.x)*Math.min(1,dt*3);
+  camera.position.z+=(tz-camera.position.z)*Math.min(1,dt*3);
+  camera.position.y=ISO_DY;
+  camera.lookAt(camera.position.x-ISO_DX, 0, camera.position.z-ISO_DZ);
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -841,7 +802,6 @@ const mouse=new THREE.Vector2();
 const hotlabelEl=document.getElementById('hotlabel');
 
 renderer.domElement.addEventListener('mousemove',e=>{
-  if(fpActive) return;
   const rect=renderer.domElement.getBoundingClientRect();
   mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
   mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
@@ -861,7 +821,7 @@ renderer.domElement.addEventListener('mousemove',e=>{
 });
 
 renderer.domElement.addEventListener('click',e=>{
-  if(fpActive||activeDialog) return;
+  if(activeDialog) return;
   const rect=renderer.domElement.getBoundingClientRect();
   mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
   mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
@@ -882,68 +842,14 @@ renderer.domElement.addEventListener('click',e=>{
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────
-// FIRST-PERSON WALK
-// ─────────────────────────────────────────────────────────────────────
-const BOUNDS={minX:-6,maxX:6,minZ:-10.5,maxZ:10.5};
-const EYE=1.68,WSPEED=4.5,LSENS=0.0018;
-let fpActive=false,fpYaw=0,fpPitch=0;
-const fpKeys={};
-const fpEuler=new THREE.Euler(0,0,0,'YXZ');
-
-document.addEventListener('keydown',e=>{fpKeys[e.code]=true;if(e.code==='Escape'&&fpActive)exitFP();});
-document.addEventListener('keyup',e=>{fpKeys[e.code]=false;});
-document.addEventListener('mousemove',e=>{
-  if(!fpActive) return;
-  fpYaw-=e.movementX*LSENS; fpPitch-=e.movementY*LSENS;
-  fpPitch=Math.max(-Math.PI*.42,Math.min(Math.PI*.42,fpPitch));
-  fpEuler.set(fpPitch,fpYaw,0); camera.quaternion.setFromEuler(fpEuler);
-});
-document.addEventListener('pointerlockchange',()=>{
-  fpActive=document.pointerLockElement===renderer.domElement; updateUI();
-});
-function enterFP(){
-  const d=new THREE.Vector3(); camera.getWorldDirection(d);
-  fpYaw=Math.atan2(d.x,d.z)+Math.PI; fpPitch=Math.asin(-d.y);
-  camera.position.y=EYE; orbit.enabled=false;
-  renderer.domElement.requestPointerLock();
-}
-function exitFP(){
-  document.exitPointerLock(); orbit.enabled=freeCam; fpActive=false; updateUI();
-}
-function updateUI(){
-  document.getElementById('ui').textContent=fpActive
-    ?'WASD to walk · Mouse to look · ESC to exit'
-    :'Click to move · Drag to orbit · Scroll to zoom';
-  document.getElementById('modeBtn').textContent=fpActive?'Orbit Mode':'Walk Mode';
-}
-function updateFP(dt){
-  if(!fpActive) return;
-  const fwd=Number(fpKeys['KeyW']||fpKeys['ArrowUp'])-Number(fpKeys['KeyS']||fpKeys['ArrowDown']);
-  const str=Number(fpKeys['KeyD']||fpKeys['ArrowRight'])-Number(fpKeys['KeyA']||fpKeys['ArrowLeft']);
-  const mv=new THREE.Vector3(str,0,-fwd);
-  if(mv.length()>0) mv.normalize().applyEuler(new THREE.Euler(0,fpYaw,0)).multiplyScalar(WSPEED*dt);
-  camera.position.add(mv);
-  camera.position.x=Math.max(BOUNDS.minX,Math.min(BOUNDS.maxX,camera.position.x));
-  camera.position.z=Math.max(BOUNDS.minZ,Math.min(BOUNDS.maxZ,camera.position.z));
-  camera.position.y=EYE;
-}
-
-document.getElementById('modeBtn').addEventListener('click',()=>{fpActive?exitFP():enterFP();});
-
-const freeCamBtn=document.getElementById('freeCamBtn');
-freeCamBtn.addEventListener('click',()=>{
-  freeCam=!freeCam;
-  orbit.enabled=freeCam&&!fpActive;
-  freeCamBtn.classList.toggle('active',freeCam);
-  freeCamBtn.textContent=freeCam?'Game Camera':'Free Camera';
-});
 
 // ─────────────────────────────────────────────────────────────────────
 // RESIZE
 // ─────────────────────────────────────────────────────────────────────
 window.addEventListener('resize',()=>{
-  camera.aspect=innerWidth/innerHeight;
+  const a=isoAspect();
+  camera.left=isoFrustum*a/-2; camera.right=isoFrustum*a/2;
+  camera.top=isoFrustum/2; camera.bottom=isoFrustum/-2;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
   composer.setSize(innerWidth,innerHeight);
@@ -971,9 +877,7 @@ function animate(){
   animateCharacter(player.mesh.parts,player.state,player.animTime);
 
   // Camera
-  if(fpActive) updateFP(dt);
-  else if(!freeCam) updateGameCamera(dt);
-  else orbit.update();
+  updateGameCamera(dt);
 
   // Candle flicker
   scene.traverse(o=>{
