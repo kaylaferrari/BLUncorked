@@ -104,7 +104,7 @@ body {
 }
 
 .flask-canvas {
-    width: 90px;
+    width: 130px;
     height: auto;
     filter: drop-shadow(0 4px 12px rgba(100,200,255,0.5));
     image-rendering: auto;

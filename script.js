@@ -153,8 +153,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Clamp to walkable bounds
             const bounds = currentScene === 'upper'
-                ? { minX:-28, maxX:28, minZ:-30, maxZ:18 }
-                : { minX:-25, maxX:25, minZ:-18, maxZ:16 };
+                ? { minX:-18, maxX:20, minZ:-22, maxZ:13 }
+                : { minX:-18, maxX:18, minZ:-12, maxZ:12 };
 
             // Pit exclusion on upper floor — push player back if entering pit
             if (currentScene === 'upper') {
@@ -417,14 +417,30 @@ document.addEventListener("DOMContentLoaded", () => {
         const H = threeCanvas.clientHeight;
         const wRect = wrapper.getBoundingClientRect();
         const cRect = threeCanvas.getBoundingClientRect();
+        // Parallax offset matching panBackground
+        const parX = (playerGroup.position.x / 28) * 0.07;
+        const parZ = (playerGroup.position.z / 30) * 0.04;
+
         NPC_CONFIGS.forEach(cfg => {
             const el = npcEls[cfg.id];
             if (!el) return;
             const onCurrentFloor = cfg.floor === currentScene;
             if (!onCurrentFloor) { el.style.opacity = '0'; return; }
+
+            if (cfg.flask) {
+                // Flask is painted into the background image at ~87% x, ~37% y.
+                // Track the same UV parallax as panBackground so it stays on the bottle.
+                const sx = W * (0.865 + parX);
+                const sy = H * (0.37 - parZ);
+                el.style.left = (cRect.left - wRect.left + sx) + 'px';
+                el.style.top  = (cRect.top  - wRect.top  + sy) + 'px';
+                el.style.transform = 'translate(-50%, -90%) scale(1.1)';
+                el.style.opacity = '1';
+                return;
+            }
+
             const wp = new THREE.Vector3(cfg.pos[0], 0, cfg.pos[2]);
             const ndc = wp.clone().project(camera);
-            // Hide if behind camera
             if (ndc.z > 1) { el.style.opacity = '0'; return; }
             const sx = (ndc.x + 1) / 2 * W;
             const sy = (-ndc.y + 1) / 2 * H;
@@ -590,10 +606,14 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        // Compute draw rect: fit to canvas height, maintain aspect ratio, center
+        // Fit sprite within canvas — constrain by whichever axis fills first
         const aspect = sw / sh;
-        const dh = CH;
-        const dw = dh * aspect;
+        let dw, dh;
+        if (CW / CH < aspect) {
+            dw = CW; dh = CW / aspect;
+        } else {
+            dh = CH; dw = CH * aspect;
+        }
         const dx = (CW - dw) / 2;
         const dy = Math.round(bob);
 
