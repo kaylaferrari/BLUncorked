@@ -364,6 +364,32 @@ body {
     pointer-events: all;
 }
 
+/* ═══════════════════ FLOOR NAV ═══════════════════ */
+#floor-nav {
+    position: absolute;
+    bottom: 18px;
+    right: 18px;
+    z-index: 20;
+}
+
+#btn-floor-toggle {
+    background: rgba(20,10,4,0.85);
+    border: 1px solid rgba(138,90,40,0.7);
+    border-radius: 8px;
+    color: #e8c880;
+    font-family: 'Georgia', serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+#btn-floor-toggle:hover {
+    background: rgba(80,40,10,0.9);
+    border-color: #c8a050;
+}
+
 /* ═══════════════════ RESPONSIVE ═══════════════════ */
 @media (max-aspect-ratio: 1/1) {
     #game-wrapper {

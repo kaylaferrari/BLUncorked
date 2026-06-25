@@ -679,9 +679,19 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentVerb  = 'look';
     let inventory    = [];
 
-    const overlay    = document.getElementById('transition-overlay');
-    const zoneBanner = document.getElementById('zone-banner');
+    const overlay      = document.getElementById('transition-overlay');
+    const zoneBanner   = document.getElementById('zone-banner');
     const scannerPanel = document.getElementById('scanner-panel');
+    const btnFloor     = document.getElementById('btn-floor-toggle');
+
+    function updateFloorBtn() {
+        if (!btnFloor) return;
+        btnFloor.textContent = currentScene === 'upper' ? '▼ Go Downstairs' : '▲ Go Upstairs';
+    }
+
+    if (btnFloor) btnFloor.addEventListener('click', () => {
+        goToScene(currentScene === 'upper' ? 'lower' : 'upper');
+    });
 
     function goToScene(target) {
         if (target === currentScene) return;
@@ -705,6 +715,7 @@ document.addEventListener("DOMContentLoaded", () => {
             hideZoneBanner();
             proximitySpot = null;
             lastBannerSpot = null;
+            updateFloorBtn();
 
             overlay.classList.remove('active');
         }, 350);
