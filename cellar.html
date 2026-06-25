@@ -308,10 +308,8 @@ function buildSideWall(xPos,dir){
     ag.rotateZ(Math.PI/2); ag.rotateY(dir>0?Math.PI/2:-Math.PI/2);
     const am=new THREE.Mesh(ag,nicheMat);
     am.position.set(xPos-dir*ND/2,NH+.1,z); scene.add(am);
-    scene.add(Object.assign(new THREE.Mesh(
-      new THREE.CylinderGeometry(.04,.04,.25,8),
-      new THREE.MeshStandardMaterial({color:'#E8D5B0'})),
-    {position:new THREE.Vector3(xPos-dir*(ND-.05),NH*.25,z)}));
+    {const cnd=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.25,8),new THREE.MeshStandardMaterial({color:'#E8D5B0'}));
+    cnd.position.set(xPos-dir*(ND-.05),NH*.25,z);scene.add(cnd);}
     const fl=new THREE.PointLight('#FF8020',1.2,3.0);
     fl.position.set(xPos-dir*(ND-.05),NH*.25+.2,z);
     fl.userData={base:1.2,speed:3+Math.random()*2,phase:Math.random()*Math.PI*2};
@@ -413,18 +411,15 @@ function mkLabel(nm,pal){
 // BAR
 // ─────────────────────────────────────────────────────────────────────
 const BZ=-10.8;
-scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(6,1.05,.65),
-  new THREE.MeshStandardMaterial({color:'#3D2010',roughness:.4,metalness:.1})),
-  {position:new THREE.Vector3(2,.525,BZ+.35)}));
-scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(6.1,.06,.75),
-  new THREE.MeshStandardMaterial({color:'#C8A46A',roughness:.25,metalness:.05})),
-  {position:new THREE.Vector3(2,1.08,BZ+.35)}));
+const barCtr=new THREE.Mesh(new THREE.BoxGeometry(6,1.05,.65),new THREE.MeshStandardMaterial({color:'#3D2010',roughness:.4,metalness:.1}));
+barCtr.position.set(2,.525,BZ+.35);scene.add(barCtr);
+const barTop=new THREE.Mesh(new THREE.BoxGeometry(6.1,.06,.75),new THREE.MeshStandardMaterial({color:'#C8A46A',roughness:.25,metalness:.05}));
+barTop.position.set(2,1.08,BZ+.35);scene.add(barTop);
 const SHELF_W=5.5,glassCols=['#1A3A1A','#4A2A0A','#8B1A1A','#2A3A4A','#3A2A1A'];
 for(let si=0;si<4;si++){
   const sy=1.3+si*.55;
-  scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(SHELF_W,.04,.3),
-    new THREE.MeshStandardMaterial({color:'#2A1008',roughness:.7})),
-    {position:new THREE.Vector3(2,sy,BZ+.04)}));
+  const shf=new THREE.Mesh(new THREE.BoxGeometry(SHELF_W,.04,.3),new THREE.MeshStandardMaterial({color:'#2A1008',roughness:.7}));
+  shf.position.set(2,sy,BZ+.04);scene.add(shf);
   const bCount=Math.floor(SHELF_W/.12);
   for(let bi=0;bi<bCount;bi++){
     const bx=2-SHELF_W/2+bi*.12+.06;
@@ -439,13 +434,13 @@ for(let si=0;si<4;si++){
       const lm=new THREE.MeshStandardMaterial({
         map:mkLabel(WINE_NAMES[ni],PALETTES[ni%PALETTES.length]),roughness:.6,
         polygonOffset:true,polygonOffsetFactor:-1});
-      scene.add(Object.assign(new THREE.Mesh(new THREE.PlaneGeometry(.062,.038),lm),
-        {position:new THREE.Vector3(bx,sy+.14,BZ+.1)}));
+      const lbl=new THREE.Mesh(new THREE.PlaneGeometry(.062,.038),lm);
+      lbl.position.set(bx,sy+.14,BZ+.1);scene.add(lbl);
     }
     const fm=new THREE.MeshStandardMaterial({
       color:['#1A1A1A','#8B1A1A','#C8A060','#1A3A1A'][(si+bi)%4],roughness:.3,metalness:.55});
-    scene.add(Object.assign(new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.025,8),fm),
-      {position:new THREE.Vector3(bx,sy+.39,BZ+.06)}));
+    const foil=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.025,8),fm);
+    foil.position.set(bx,sy+.39,BZ+.06);scene.add(foil);
   }
 }
 const blPanel=new THREE.Mesh(new THREE.PlaneGeometry(SHELF_W,2.5),
@@ -456,14 +451,13 @@ barPL.position.set(2,2.8,BZ+1.5);scene.add(barPL);
 const frMat=new THREE.MeshStandardMaterial({color:'#1C1C1C',roughness:.6,metalness:.45});
 const wgMat=new THREE.MeshStandardMaterial({color:'#6A8A9A',transparent:true,opacity:.3,roughness:.08});
 [[-3.5,2.0],[7.0,2.0]].forEach(([wx,wy])=>{
-  scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(1.9,1.5,.08),frMat),
-    {position:new THREE.Vector3(wx,wy,BZ+.01)}));
-  scene.add(Object.assign(new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.4),wgMat),
-    {position:new THREE.Vector3(wx,wy,BZ+.06)}));
+  const wfr=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.5,.08),frMat);
+  wfr.position.set(wx,wy,BZ+.01);scene.add(wfr);
+  const wpn=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.4),wgMat);
+  wpn.position.set(wx,wy,BZ+.06);scene.add(wpn);
   ['h','v'].forEach(d=>{
-    scene.add(Object.assign(
-      new THREE.Mesh(d==='h'?new THREE.BoxGeometry(1.8,.05,.06):new THREE.BoxGeometry(.05,1.4,.06),frMat),
-      {position:new THREE.Vector3(wx,wy,BZ+.055)}));
+    const wdv=new THREE.Mesh(d==='h'?new THREE.BoxGeometry(1.8,.05,.06):new THREE.BoxGeometry(.05,1.4,.06),frMat);
+    wdv.position.set(wx,wy,BZ+.055);scene.add(wdv);
   });
 });
 
