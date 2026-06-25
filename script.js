@@ -558,15 +558,12 @@ document.addEventListener("DOMContentLoaded", () => {
     loadSpr('idleBack',  'avatar_idle_back.png');    // idle facing away
     loadSpr('idleSide',  'avatar_idle_side.png');    // side profile — used for left/right
 
-    // Walk strip: 6 frames × 218px wide
     const WALK_FRAMES = 6;
-    const WALK_FW = 218;
-    const WALK_FH = 267;
 
     function drawCharacter() {
         if (!ctx || sprLoadedCount < SPR_TOTAL) return;
-        const CW = avatarCanvas.width;   // 270
-        const CH = avatarCanvas.height;  // 480
+        const CW = avatarCanvas.width;
+        const CH = avatarCanvas.height;
         ctx.clearRect(0, 0, CW, CH);
 
         const t    = performance.now() / 1000;
@@ -575,31 +572,37 @@ document.addEventListener("DOMContentLoaded", () => {
         const f    = avatarFacing || 'down';
         const frame = walk ? Math.floor(t * 9) % WALK_FRAMES : 0;
 
+        // Derive frame dimensions from the actual loaded image to handle any compression
+        const wfImg = sprAssets.walkFront;
+        const wbImg = sprAssets.walkBack;
+        const wfW = wfImg ? Math.floor(wfImg.naturalWidth / WALK_FRAMES) : 1;
+        const wfH = wfImg ? wfImg.naturalHeight : 1;
+        const wbW = wbImg ? Math.floor(wbImg.naturalWidth / WALK_FRAMES) : 1;
+        const wbH = wbImg ? wbImg.naturalHeight : 1;
+
         let img, sx, sy, sw, sh, flipH = false;
 
         if (f === 'up') {
-            // Back-facing
             if (walk) {
-                img = sprAssets.walkBack;
-                sx = frame * WALK_FW; sy = 0; sw = WALK_FW; sh = WALK_FH;
+                img = wbImg;
+                sx = frame * wbW; sy = 0; sw = wbW; sh = wbH;
             } else {
                 img = sprAssets.idleBack;
                 sx = 0; sy = 0; sw = img.naturalWidth; sh = img.naturalHeight;
             }
         } else if (f === 'left') {
             flipH = true;
-            img = walk ? sprAssets.walkFront : sprAssets.idleSide;
-            sx = walk ? frame * WALK_FW : 0;
-            sy = 0; sw = walk ? WALK_FW : img.naturalWidth; sh = walk ? WALK_FH : img.naturalHeight;
+            img = walk ? wfImg : sprAssets.idleSide;
+            sx = walk ? frame * wfW : 0;
+            sy = 0; sw = walk ? wfW : img.naturalWidth; sh = walk ? wfH : img.naturalHeight;
         } else if (f === 'right') {
-            img = walk ? sprAssets.walkFront : sprAssets.idleSide;
-            sx = walk ? frame * WALK_FW : 0;
-            sy = 0; sw = walk ? WALK_FW : img.naturalWidth; sh = walk ? WALK_FH : img.naturalHeight;
+            img = walk ? wfImg : sprAssets.idleSide;
+            sx = walk ? frame * wfW : 0;
+            sy = 0; sw = walk ? wfW : img.naturalWidth; sh = walk ? wfH : img.naturalHeight;
         } else {
-            // down — toward camera
             if (walk) {
-                img = sprAssets.walkFront;
-                sx = frame * WALK_FW; sy = 0; sw = WALK_FW; sh = WALK_FH;
+                img = wfImg;
+                sx = frame * wfW; sy = 0; sw = wfW; sh = wfH;
             } else {
                 img = sprAssets.idleFront;
                 sx = 0; sy = 0; sw = img.naturalWidth; sh = img.naturalHeight;
