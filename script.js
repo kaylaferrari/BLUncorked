@@ -367,20 +367,52 @@ document.addEventListener("DOMContentLoaded", () => {
     const NPC_CONFIGS = [
         { id:'sommelier', floor:'upper', pos:[20, 0, 8],  emoji:'🧔', label:'Sommelier', color:'#e8c880' },
         { id:'corkscrew', floor:'upper', pos:[-22,0,-8],  emoji:'🔩', label:'Corkscrew',  color:'#aaa'    },
-        { id:'bottle',    floor:'upper', pos:[24, 0, 10], emoji:'🍾', label:'',           color:'#c8f080' },
+        { id:'bottle',    floor:'upper', pos:[24, 0, 10], flask:true,  label:'',           color:'#c8f080' },
         { id:'guide',     floor:'lower', pos:[0,  0,  8], emoji:'👤', label:'Guide',      color:'#a8d8f0' },
     ];
     const npcEls = {};
+    // Flask sprite sheet: 3 cols × 4 rows, 1024×1024 → each frame ~341×256px
+    const FLASK_FW = 341, FLASK_FH = 256, FLASK_COLS = 3;
+    const flaskImg = new Image();
+    flaskImg.src = 'flask_sprite.png';
+
     NPC_CONFIGS.forEach(cfg => {
         const el = document.createElement('div');
         el.className = 'npc-sprite';
         el.id = 'npc-' + cfg.id;
         el.dataset.floor = cfg.floor;
-        el.innerHTML = `<span class="npc-emoji">${cfg.emoji}</span>${cfg.label ? `<span class="npc-label" style="color:${cfg.color}">${cfg.label}</span>` : ''}`;
+        if (cfg.flask) {
+            // Render flask via canvas so we can animate it
+            const fc = document.createElement('canvas');
+            fc.width  = FLASK_FW;
+            fc.height = FLASK_FH;
+            fc.className = 'flask-canvas';
+            el.appendChild(fc);
+            cfg._canvas = fc;
+        } else {
+            el.innerHTML = `<span class="npc-emoji">${cfg.emoji}</span>${cfg.label ? `<span class="npc-label" style="color:${cfg.color}">${cfg.label}</span>` : ''}`;
+        }
         el.style.cssText = 'position:absolute;display:flex;flex-direction:column;align-items:center;pointer-events:none;z-index:7;transform:translate(-50%,-90%);';
         wrapper.appendChild(el);
         npcEls[cfg.id] = el;
     });
+
+    // Animate flask sprite — cycles through idle frames (row 0, frames 0-2)
+    let flaskFrame = 0;
+    let flaskTimer = 0;
+    function drawFlask(dt) {
+        flaskTimer += dt;
+        if (flaskTimer > 0.55) { flaskFrame = (flaskFrame + 1) % 3; flaskTimer = 0; }
+        NPC_CONFIGS.forEach(cfg => {
+            if (!cfg.flask || !cfg._canvas) return;
+            const fc = cfg._canvas;
+            const fctx = fc.getContext('2d');
+            fctx.clearRect(0, 0, FLASK_FW, FLASK_FH);
+            if (flaskImg.complete && flaskImg.naturalWidth > 0) {
+                fctx.drawImage(flaskImg, flaskFrame * FLASK_FW, 0, FLASK_FW, FLASK_FH, 0, 0, FLASK_FW, FLASK_FH);
+            }
+        });
+    }
 
     function projectNPCs() {
         const W = threeCanvas.clientWidth;
@@ -543,6 +575,7 @@ document.addEventListener("DOMContentLoaded", () => {
         projectAvatar();
         projectNPCs();
         drawCharacter();
+        drawFlask(dt);
         drawMinimap();
         renderer.render(scene3d, camera);
     }
