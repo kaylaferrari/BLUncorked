@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLUncorked</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-wrapper">
+
+        <!-- ═══ THREE.JS CANVAS ═══ -->
+        <canvas id="three-canvas"></canvas>
+
+        <!-- ═══ PLAYER AVATAR ═══ -->
+        <div id="player-avatar" data-facing="down" data-state="idle">
+            <canvas id="avatar-canvas" width="270" height="480"></canvas>
+            <div id="avatar-shadow"></div>
+        </div>
+
+        <!-- ═══ ZONE BANNER ═══ -->
+        <div id="zone-banner" class="hidden">
+            <span id="zone-banner-icon"></span>
+            <span id="zone-banner-name"></span>
+            <span id="zone-banner-hint">Press E or click to interact</span>
+        </div>
+
+        <!-- ═══ INTERACT PROMPT ═══ -->
+        <div id="interact-prompt" class="hidden">[ E ] Interact</div>
+
+        <!-- ═══ DIALOGUE BOX ═══ -->
+        <div id="dialogue-box" class="hidden"></div>
+
+        <!-- ═══ SOMMELIER DIALOGUE PANEL ═══ -->
+        <div id="dialogue-panel" class="panel hidden">
+            <div class="panel-header">
+                <span class="panel-avatar">🧔</span>
+                <span id="dialogue-speaker">The Sommelier</span>
+                <button class="panel-close" data-panel="dialogue-panel">✕</button>
+            </div>
+            <div id="dialogue-text"></div>
+            <div id="dialogue-choices"></div>
+        </div>
+
+        <!-- ═══ ZONE CONTENT PANEL ═══ -->
+        <div id="zone-panel" class="panel hidden">
+            <div class="panel-header">
+                <span id="zone-panel-icon"></span>
+                <span id="zone-panel-title"></span>
+                <button class="panel-close" data-panel="zone-panel">✕</button>
+            </div>
+            <div id="zone-panel-body"></div>
+        </div>
+
+        <!-- ═══ WINE SCANNER PANEL (full overlay) ═══ -->
+        <div id="scanner-panel" class="panel hidden">
+            <div class="panel-header">
+                <span class="panel-avatar">🍷</span>
+                <span>Wine Scanner</span>
+                <button class="panel-close" data-panel="scanner-panel">✕</button>
+            </div>
+            <div id="scanner-panel-body">
+                <iframe id="scanner-frame" src="wine-scanner.html" frameborder="0"
+                        style="width:100%;height:520px;border:none;border-radius:0 0 12px 12px;background:#0d0608;">
+                </iframe>
+            </div>
+        </div>
+
+        <!-- ═══ WINE SCAN WIDGET (bottom right) ═══ -->
+        <div id="scan-widget">
+            <div id="scan-widget-header">
+                <span>🍷</span>
+                <span>Scan a Wine</span>
+            </div>
+            <label id="scan-upload-label" for="scan-upload-input">
+                📷 Upload label to identify
+                <input type="file" id="scan-upload-input" accept="image/*" style="display:none">
+            </label>
+            <div id="scan-result" class="hidden"></div>
+        </div>
+
+        <!-- ═══ FLOOR NAV ═══ -->
+        <div id="floor-nav">
+            <button id="btn-floor-toggle">▼ Go Downstairs</button>
+        </div>
+
+        <!-- ═══ CONTROLS HINT ═══ -->
+        <div id="controls-hint">WASD or click to walk · E to interact</div>
+
+        <!-- ═══ SCENE TRANSITION OVERLAY ═══ -->
+        <div id="transition-overlay"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
