@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BL Uncorked — Wine Cellar</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0602;overflow:hidden;font-family:'Georgia',serif}
+canvas{display:block}
+#ui{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  color:#c8a46a;font-size:12px;letter-spacing:.15em;text-transform:uppercase;
+  opacity:.65;pointer-events:none;text-shadow:0 0 12px rgba(200,164,106,.45);
+  white-space:nowrap;
+}
+#modeBtn{
+  position:fixed;top:20px;right:20px;
+  background:rgba(200,164,106,.12);color:#c8a46a;
+  border:1px solid rgba(200,164,106,.35);font-family:'Georgia',serif;
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  padding:8px 18px;cursor:pointer;backdrop-filter:blur(4px);
+  border-radius:2px;z-index:10;transition:background .2s;
+}
+#modeBtn:hover{background:rgba(200,164,106,.28)}
+#logo{
+  position:fixed;top:20px;left:24px;color:#c8a46a;
+  font-size:15px;letter-spacing:.25em;text-transform:uppercase;
+  opacity:.8;pointer-events:none;text-shadow:0 0 16px rgba(200,164,106,.4);
+}
+#loader{
+  position:fixed;inset:0;background:#0d0602;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:18px;z-index:100;transition:opacity .9s ease;
+}
+#loader h1{color:#c8a46a;font-size:26px;letter-spacing:.35em;font-weight:normal}
+#loader p{color:rgba(200,164,106,.5);font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.bar{width:200px;height:1px;background:#2a1610;position:relative;overflow:hidden}
+.fill{position:absolute;height:100%;background:#c8a46a;width:0%;transition:width .25s ease;box-shadow:0 0 8px #ffbe6a}
+</style>
+</head>
+<body>
+<div id="loader">
+  <h1>BL Uncorked</h1>
+  <div class="bar"><div class="fill" id="fill"></div></div>
+  <p>Preparing the cellar…</p>
+</div>
+<div id="logo">BL Uncorked</div>
+<div id="ui">Drag to explore · Scroll to zoom</div>
+<button id="modeBtn">Walk Mode</button>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls }  from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }     from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+// ─────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────
+const ROOM_W = 14, ROOM_L = 22, WALL_H = 3.5;
+const ARCH_H = 6.5, ARCH_COUNT = 5;
+const ATRIUM_R = 2.2, ATRIUM_DEPTH = 3.5;
+
+// ─────────────────────────────────────────────────────────────────────
+// RENDERER
+// ─────────────────────────────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+// ─────────────────────────────────────────────────────────────────────
+// SCENE + CAMERA
+// ─────────────────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#0D0602');
+scene.fog = new THREE.FogExp2('#1C0A04', 0.032);
+
+const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.1, 80);
+camera.position.set(5, 2.2, 9);
+camera.lookAt(0, 1.5, 0);
+
+// ─────────────────────────────────────────────────────────────────────
+// ORBIT CONTROLS
+// ─────────────────────────────────────────────────────────────────────
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.target.set(0, 1.5, 0);
+orbit.enableDamping = true;
+orbit.dampingFactor = 0.06;
+orbit.minDistance = 1.5;
+orbit.maxDistance = 18;
+orbit.maxPolarAngle = Math.PI * 0.72;
+orbit.minPolarAngle = Math.PI * 0.08;
+
+// ─────────────────────────────────────────────────────────────────────
+// POST-PROCESSING
+// ─────────────────────────────────────────────────────────────────────
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.5, 0.72);
+composer.addPass(bloom);
+
+// ─────────────────────────────────────────────────────────────────────
+// LIGHTING
+// ─────────────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight('#3D1C08', 0.35));
+const hemi = new THREE.HemisphereLight('#FF9A3C', '#1C0F08', 0.18);
+scene.add(hemi);
+
+[[-4,5,-8],[3,5,-3],[-2,5,3],[4,5,8]].forEach(([x,y,z],i) => {
+  const pl = new THREE.PointLight('#FF9A3C', 0.5 + i * 0.05, 12);
+  pl.position.set(x, y, z);
+  scene.add(pl);
+});
+const barSpot = new THREE.SpotLight('#FFF5C8', 1.5, 10, Math.PI/5, 0.4, 1.5);
+barSpot.position.set(2, 6, -8);
+barSpot.target.position.set(2, 2, -10.5);
+scene.add(barSpot); scene.add(barSpot.target);
+
+const atriumGlow = new THREE.PointLight('#FF6010', 0.7, 5);
+atriumGlow.position.set(-1.5, -0.5, 1.5);
+scene.add(atriumGlow);
+
+// ─────────────────────────────────────────────────────────────────────
+// FLOOR (procedural wood shader)
+// ─────────────────────────────────────────────────────────────────────
+const woodMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uBase:  { value: new THREE.Color('#C8A46A') },
+    uDark:  { value: new THREE.Color('#8B6535') },
+    uPlank: { value: 0.55 },
+    uFreq:  { value: 28.0 },
+    uStr:   { value: 0.18 },
+  },
+  vertexShader:`
+    varying vec2 vUv; varying vec3 vP;
+    void main(){ vUv=uv; vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }
+  `,
+  fragmentShader:`
+    uniform vec3 uBase,uDark; uniform float uPlank,uFreq,uStr;
+    varying vec2 vUv; varying vec3 vP;
+    float rand(vec2 c){ return fract(sin(dot(c,vec2(127.1,311.7)))*43758.5453); }
+    void main(){
+      float pi=floor(vP.x/uPlank);
+      float po=rand(vec2(pi,0.));
+      float pd=rand(vec2(pi,1.))*0.15;
+      float g=sin((vP.z+po*3.)*uFreq)*uStr;
+      g+=sin((vP.z+po*1.5)*uFreq*.4)*uStr*.5;
+      g=g*.5+.5;
+      float seam=smoothstep(0.,.03,fract(vP.x/uPlank))*smoothstep(1.,.97,fract(vP.x/uPlank));
+      vec3 col=mix(uDark,uBase,g)-pd;
+      col*=seam*.85+.15;
+      gl_FragColor=vec4(col,1.);
+    }
+  `,
+});
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, ROOM_L, 80, 80), woodMat);
+floor.rotateX(-Math.PI/2); floor.position.y = 0.01;
+scene.add(floor);
+const base = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W+2, ROOM_L+2),
+  new THREE.MeshStandardMaterial({ color:'#1C0F08' }));
+base.rotateX(-Math.PI/2); base.receiveShadow = true;
+scene.add(base);
+
+// ─────────────────────────────────────────────────────────────────────
+// VAULT (barrel ceiling + arch ribs + string lights)
+// ─────────────────────────────────────────────────────────────────────
+(function buildVault(){
+  const brickMat = new THREE.MeshStandardMaterial({
+    color:'#8B4A2F', roughness:0.92, side: THREE.BackSide,
+  });
+  const archRibMat = new THREE.MeshStandardMaterial({ color:'#7A3F28', roughness:0.88 });
+
+  const r = ROOM_W/2;
+  const shape = new THREE.Shape();
+  for(let i=0;i<=64;i++){
+    const t=(i/64)*Math.PI;
+    const x=-r*Math.cos(t), y=r*Math.sin(t)*(ARCH_H/r);
+    i===0 ? shape.moveTo(x,y) : shape.lineTo(x,y);
+  }
+  shape.lineTo(r,0); shape.lineTo(-r,0);
+
+  const vaultGeo = new THREE.ExtrudeGeometry(shape, { depth:ROOM_L, bevelEnabled:false });
+  vaultGeo.rotateX(Math.PI/2); vaultGeo.translate(0,0,ROOM_L/2);
+
+  // vertex color variation
+  const pos = vaultGeo.attributes.position;
+  const cols = new Float32Array(pos.count*3);
+  const pal = ['#8B4A2F','#A05530','#7A3C25','#C07050','#954030'].map(c=>new THREE.Color(c));
+  for(let i=0;i<pos.count;i++){
+    const c=pal[Math.floor(Math.random()*pal.length)];
+    cols[i*3]=c.r; cols[i*3+1]=c.g; cols[i*3+2]=c.b;
+  }
+  vaultGeo.setAttribute('color', new THREE.BufferAttribute(cols,3));
+  brickMat.vertexColors = true;
+
+  scene.add(new THREE.Mesh(vaultGeo, brickMat));
+
+  const archSpacing = ROOM_L/(ARCH_COUNT-1);
+  for(let i=0;i<ARCH_COUNT;i++){
+    const zPos = -ROOM_L/2 + i*archSpacing;
+
+    // rib tube
+    const pts=[];
+    for(let j=0;j<=32;j++){
+      const t=(j/32)*Math.PI;
+      pts.push(new THREE.Vector3(-r*Math.cos(t), r*Math.sin(t)*(ARCH_H/r), zPos));
+    }
+    const rib = new THREE.Mesh(
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 32, 0.175, 8, false),
+      archRibMat,
+    );
+    scene.add(rib);
+
+    // string lights
+    for(let j=0;j<=20;j+=2){
+      const t=(j/20)*Math.PI;
+      const bx=-r*Math.cos(t), by=r*Math.sin(t)*(ARCH_H/r)-0.15;
+      const bulb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04,6,6),
+        new THREE.MeshStandardMaterial({ color:'#FFF5C8', emissive:'#FFDA80', emissiveIntensity:3 }),
+      );
+      bulb.position.set(bx, by, zPos);
+      scene.add(bulb);
+      if(j%4===0){
+        const pl = new THREE.PointLight('#FF9A3C', 0.4, 4);
+        pl.position.set(bx, by-0.1, zPos);
+        scene.add(pl);
+      }
+    }
+  }
+})();
+
+// ─────────────────────────────────────────────────────────────────────
+// WALLS (brick + arched niches with candles)
+// ─────────────────────────────────────────────────────────────────────
+const brickWallMat = () => new THREE.MeshStandardMaterial({ color:'#7A3C25', roughness:0.95 });
+const nicheMat = new THREE.MeshStandardMaterial({ color:'#5A2E18', roughness:0.98, side:THREE.BackSide });
+
+// back wall
+const bw = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, WALL_H), brickWallMat());
+bw.position.set(0, WALL_H/2, -ROOM_L/2); scene.add(bw);
+// front wall
+const fw = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, WALL_H), brickWallMat());
+fw.position.set(0, WALL_H/2, ROOM_L/2); fw.rotation.y=Math.PI; scene.add(fw);
+
+function buildSideWall(xPos, dir){
+  const NICHE_COUNT=3, NICHE_W=1.4, NICHE_H=2.2, NICHE_D=0.6;
+  const spacing = ROOM_L/(NICHE_COUNT+1);
+  const mat = brickWallMat();
+
+  for(let i=0;i<NICHE_COUNT;i++){
+    const z = -ROOM_L/2 + spacing*(i+1);
+    const pw = spacing - NICHE_W;
+
+    // panels beside niche
+    if(pw>0.2){
+      [-1,1].forEach(s=>{
+        const p = new THREE.Mesh(new THREE.PlaneGeometry(pw*.9, WALL_H), mat);
+        p.position.set(xPos, WALL_H/2, z + s*(NICHE_W/2 + pw*.45));
+        p.rotation.y = dir>0 ? Math.PI/2 : -Math.PI/2;
+        scene.add(p);
+      });
+    }
+    // niche back
+    const nb = new THREE.Mesh(new THREE.PlaneGeometry(NICHE_W, NICHE_H), nicheMat);
+    nb.position.set(xPos - dir*NICHE_D, NICHE_H/2+.1, z);
+    nb.rotation.y = dir>0 ? Math.PI/2 : -Math.PI/2;
+    scene.add(nb);
+    // niche sides
+    [-1,1].forEach(s=>{
+      const ns = new THREE.Mesh(new THREE.PlaneGeometry(NICHE_D, NICHE_H), nicheMat);
+      ns.position.set(xPos-dir*NICHE_D/2, NICHE_H/2+.1, z+s*NICHE_W/2);
+      ns.rotation.y = s*dir>0 ? 0 : Math.PI;
+      scene.add(ns);
+    });
+    // arch top
+    const ag = new THREE.CylinderGeometry(NICHE_W/2, NICHE_W/2, NICHE_D, 16, 1, true, 0, Math.PI);
+    ag.rotateZ(Math.PI/2); ag.rotateY(dir>0 ? Math.PI/2 : -Math.PI/2);
+    const am = new THREE.Mesh(ag, nicheMat);
+    am.position.set(xPos-dir*NICHE_D/2, NICHE_H+.1, z);
+    scene.add(am);
+    // candle
+    const candle = new THREE.Mesh(
+      new THREE.CylinderGeometry(.04,.04,.25,8),
+      new THREE.MeshStandardMaterial({color:'#E8D5B0'}),
+    );
+    candle.position.set(xPos-dir*(NICHE_D-.05), NICHE_H*.25, z);
+    scene.add(candle);
+    const flame = new THREE.PointLight('#FF8020', 0.6, 2.5);
+    flame.position.set(xPos-dir*(NICHE_D-.05), NICHE_H*.25+.18, z);
+    flame.userData = { base:0.6, speed:3+Math.random()*2, phase:Math.random()*Math.PI*2 };
+    scene.add(flame);
+  }
+  // top strip
+  const ts = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_L, WALL_H-NICHE_H-.3), mat);
+  ts.position.set(xPos, WALL_H-(WALL_H-NICHE_H-.3)/2, 0);
+  ts.rotation.y = dir>0 ? Math.PI/2 : -Math.PI/2;
+  scene.add(ts);
+}
+buildSideWall(-ROOM_W/2,  1);
+buildSideWall( ROOM_W/2, -1);
+
+// ─────────────────────────────────────────────────────────────────────
+// ATRIUM (sunken cellar)
+// ─────────────────────────────────────────────────────────────────────
+const atriumOffset = new THREE.Vector3(-1.5, 0, 1.5);
+
+const atriumWall = new THREE.Mesh(
+  new THREE.CylinderGeometry(ATRIUM_R, ATRIUM_R, ATRIUM_DEPTH, 48, 1, true),
+  new THREE.MeshStandardMaterial({ color:'#5A2E18', roughness:.98, side:THREE.BackSide }),
+);
+atriumWall.position.set(...atriumOffset.toArray()).y -= ATRIUM_DEPTH/2 + .05;
+atriumWall.position.copy(atriumOffset);
+atriumWall.position.y = -(ATRIUM_DEPTH/2)-.05;
+scene.add(atriumWall);
+
+const lowerFloor = new THREE.Mesh(
+  new THREE.CircleGeometry(ATRIUM_R, 48),
+  new THREE.MeshStandardMaterial({ color:'#4A2810', roughness:.95 }),
+);
+lowerFloor.rotation.x = -Math.PI/2;
+lowerFloor.position.set(atriumOffset.x, -ATRIUM_DEPTH-.05, atriumOffset.z);
+scene.add(lowerFloor);
+
+// tables below
+[[-.8,-.5],[.5,.4],[-.3,.9]].forEach(([tx,tz])=>{
+  const ty = -ATRIUM_DEPTH+.03;
+  const tbl = new THREE.Mesh(
+    new THREE.CylinderGeometry(.45,.45,.05,16),
+    new THREE.MeshStandardMaterial({color:'#E8D5B0',roughness:.6}),
+  );
+  tbl.position.set(atriumOffset.x+tx, ty+.72, atriumOffset.z+tz);
+  scene.add(tbl);
+  const leg = new THREE.Mesh(
+    new THREE.CylinderGeometry(.04,.04,.7,8),
+    new THREE.MeshStandardMaterial({color:'#3D2010'}),
+  );
+  leg.position.set(atriumOffset.x+tx, ty+.35, atriumOffset.z+tz);
+  scene.add(leg);
+  const cf = new THREE.PointLight('#FF7010',.3,1.2);
+  cf.position.set(atriumOffset.x+tx, ty+.85, atriumOffset.z+tz);
+  cf.userData = { base:.3, speed:4+Math.random()*2, phase:Math.random()*Math.PI*2 };
+  scene.add(cf);
+});
+
+const caveLight = new THREE.PointLight('#FF9A3C',.8,ATRIUM_DEPTH*1.2);
+caveLight.position.set(atriumOffset.x, -ATRIUM_DEPTH+.8, atriumOffset.z);
+scene.add(caveLight);
+
+// ─────────────────────────────────────────────────────────────────────
+// GLASS RAILING
+// ─────────────────────────────────────────────────────────────────────
+const ax = atriumOffset.x, az = atriumOffset.z;
+const RAIL_H = 0.95;
+const brassMat = new THREE.MeshStandardMaterial({ color:'#C8A060', roughness:.25, metalness:.9 });
+const glassPanelMat = new THREE.MeshPhysicalMaterial({
+  color:'#B8D4E8', transparent:true, opacity:.18, roughness:.05,
+  transmission:.82, thickness:.08, side:THREE.DoubleSide,
+});
+
+[0, RAIL_H].forEach(yo=>{
+  const pts = [];
+  for(let i=0;i<=64;i++){
+    const a=(i/64)*Math.PI*2;
+    pts.push(new THREE.Vector3(ax+Math.cos(a)*ATRIUM_R, yo, az+Math.sin(a)*ATRIUM_R));
+  }
+  const rail = new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),80,.025,8,true),
+    brassMat,
+  );
+  scene.add(rail);
+});
+
+for(let i=0;i<24;i++){
+  const a0=(i/24)*Math.PI*2, a1=((i+1)/24)*Math.PI*2, am=(a0+a1)/2;
+  const px=ax+Math.cos(am)*ATRIUM_R, pz=az+Math.sin(am)*ATRIUM_R;
+  const arcLen = ATRIUM_R*(a1-a0);
+  const pane = new THREE.Mesh(new THREE.PlaneGeometry(arcLen*.92,RAIL_H), glassPanelMat);
+  pane.position.set(px*.99+ax*.01, RAIL_H/2, pz*.99+az*.01);
+  pane.rotation.y = -am;
+  scene.add(pane);
+}
+for(let i=0;i<32;i++){
+  const a=(i/32)*Math.PI*2;
+  const px=ax+Math.cos(a)*ATRIUM_R, pz=az+Math.sin(a)*ATRIUM_R;
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,RAIL_H,8), brassMat);
+  post.position.set(px, RAIL_H/2, pz); scene.add(post);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(.028,8,8), brassMat);
+  cap.position.set(px, RAIL_H+.028, pz); scene.add(cap);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// BOTTLE LABELS (canvas textures)
+// ─────────────────────────────────────────────────────────────────────
+const WINE_NAMES = [
+  ['BL','UNCORKED','Reserve','2019'],
+  ['CAVE','NOIR','Grand Cru','2017'],
+  ['VOLTA','ROUGE','Barrel Select','2021'],
+  ['ARCO','BIANCO','Aged 24 mo.','2020'],
+  ['BRAINLABS','CELLAR','Limited','2018'],
+];
+const PALETTES = [
+  {bg:'#F5ECD7',text:'#2A1608',accent:'#8B1A1A',line:'#C8A46A'},
+  {bg:'#1A2A1A',text:'#E8D5A0',accent:'#C8A46A',line:'#4A6A4A'},
+  {bg:'#EDE0C8',text:'#1C0F08',accent:'#4A2A0A',line:'#8B6535'},
+  {bg:'#F0EAE0',text:'#2A1A08',accent:'#2A3A5A',line:'#6A5A4A'},
+  {bg:'#2A1A14',text:'#E8D5B0',accent:'#C87050',line:'#6A3A28'},
+];
+
+function makeLabelTex(nm, pal){
+  const W=128,H=64, cv=document.createElement('canvas');
+  cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle=pal.bg; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle=pal.line; ctx.lineWidth=1.5; ctx.strokeRect(4,4,W-8,H-8);
+  ctx.lineWidth=.5; ctx.strokeRect(6,6,W-12,H-12);
+  ctx.fillStyle=pal.accent; ctx.fillRect(12,10,W-24,2);
+  ctx.fillStyle=pal.text; ctx.font='bold 11px Georgia,serif'; ctx.textAlign='center';
+  ctx.fillText(nm[0],W/2,26);
+  ctx.font='8px Georgia,serif'; ctx.fillText(nm[1],W/2,36);
+  ctx.fillStyle=pal.accent; ctx.font='italic 7px Georgia,serif'; ctx.fillText(nm[2],W/2,46);
+  ctx.fillStyle=pal.text; ctx.font='6px Georgia,serif'; ctx.fillText(nm[3],W/2,56);
+  ctx.fillStyle=pal.accent; ctx.fillRect(12,H-12,W-24,1);
+  const t=new THREE.CanvasTexture(cv); t.needsUpdate=true; return t;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// BAR
+// ─────────────────────────────────────────────────────────────────────
+const BZ = -10.8;
+const ctrMat = new THREE.MeshStandardMaterial({color:'#3D2010',roughness:.4,metalness:.1});
+const ctrTopMat = new THREE.MeshStandardMaterial({color:'#C8A46A',roughness:.25,metalness:.05});
+const shelfMat = new THREE.MeshStandardMaterial({color:'#2A1008',roughness:.7});
+
+const ctr = new THREE.Mesh(new THREE.BoxGeometry(6,1.05,.65), ctrMat);
+ctr.position.set(2,.525,BZ+.35); scene.add(ctr);
+const ctrTop = new THREE.Mesh(new THREE.BoxGeometry(6.1,.06,.75), ctrTopMat);
+ctrTop.position.set(2,1.08,BZ+.35); scene.add(ctrTop);
+
+const SHELF_W=5.5, SHELF_COUNT=4;
+const glassCols=['#1A3A1A','#4A2A0A','#8B1A1A','#2A3A4A','#3A2A1A'];
+
+for(let si=0;si<SHELF_COUNT;si++){
+  const sy=1.3+si*.55;
+  const shelf = new THREE.Mesh(new THREE.BoxGeometry(SHELF_W,.04,.3), shelfMat);
+  shelf.position.set(2,sy,BZ+.04); scene.add(shelf);
+
+  const bCount=Math.floor(SHELF_W/.12);
+  for(let bi=0;bi<bCount;bi++){
+    const bx=2-SHELF_W/2+bi*.12+.06;
+    const col=glassCols[(si*7+bi)%glassCols.length];
+    const gm=new THREE.MeshStandardMaterial({color:col,roughness:.18,metalness:.08,transparent:true,opacity:.88});
+    const bot=new THREE.Mesh(new THREE.CylinderGeometry(.033,.038,.28,10),gm);
+    bot.position.set(bx,sy+.15,BZ+.06); scene.add(bot);
+    const nk=new THREE.Mesh(new THREE.CylinderGeometry(.016,.033,.1,8),gm);
+    nk.position.set(bx,sy+.33,BZ+.06); scene.add(nk);
+
+    // label on every other bottle
+    if(bi%2===0){
+      const ni=(si+Math.floor(bi/2))%WINE_NAMES.length;
+      const lm=new THREE.MeshStandardMaterial({
+        map:makeLabelTex(WINE_NAMES[ni],PALETTES[ni%PALETTES.length]),
+        roughness:.6, polygonOffset:true, polygonOffsetFactor:-1,
+      });
+      const lbl=new THREE.Mesh(new THREE.PlaneGeometry(.062,.038),lm);
+      lbl.position.set(bx,sy+.14,BZ+.1); scene.add(lbl);
+    }
+
+    // foil cap
+    const fm=new THREE.MeshStandardMaterial({
+      color:['#1A1A1A','#8B1A1A','#C8A060','#1A3A1A'][(si+bi)%4],
+      roughness:.3,metalness:.5,
+    });
+    const foil=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.025,8),fm);
+    foil.position.set(bx,sy+.39,BZ+.06); scene.add(foil);
+  }
+}
+
+// backlit panel
+const bl=new THREE.Mesh(new THREE.PlaneGeometry(SHELF_W,2.4),
+  new THREE.MeshStandardMaterial({color:'#FFF3C4',emissive:'#FFDA80',emissiveIntensity:.6}));
+bl.position.set(2,2.2,BZ-.01); scene.add(bl);
+const barPL=new THREE.PointLight('#FFF3C4',1.2,8);
+barPL.position.set(2,2.8,BZ+1.5); scene.add(barPL);
+
+// windows
+const frameMat=new THREE.MeshStandardMaterial({color:'#1C1C1C',roughness:.6,metalness:.4});
+const winGlassMat=new THREE.MeshPhysicalMaterial({color:'#8AAABB',transparent:true,opacity:.25,roughness:.1,transmission:.6});
+[[-3.5,2.0],[7.0,2.0]].forEach(([wx,wy])=>{
+  const fr=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.5,.08),frameMat);
+  fr.position.set(wx,wy,BZ+.01); scene.add(fr);
+  const pn=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.4),winGlassMat);
+  pn.position.set(wx,wy,BZ+.06); scene.add(pn);
+  ['h','v'].forEach(d=>{
+    const dv=new THREE.Mesh(
+      d==='h'?new THREE.BoxGeometry(1.8,.04,.05):new THREE.BoxGeometry(.04,1.4,.05),frameMat);
+    dv.position.set(wx,wy,BZ+.05); scene.add(dv);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// FIRST-PERSON WALK MODE
+// ─────────────────────────────────────────────────────────────────────
+const BOUNDS={minX:-6,maxX:6,minZ:-10,maxZ:10};
+const EYE=1.68, WALK_SPEED=4.0, LOOK_SENS=0.0018;
+
+let fpActive=false, fpYaw=0, fpPitch=0;
+const fpKeys={};
+const fpEuler=new THREE.Euler(0,0,0,'YXZ');
+
+document.addEventListener('keydown', e=>{ fpKeys[e.code]=true; });
+document.addEventListener('keyup',   e=>{ fpKeys[e.code]=false; });
+document.addEventListener('mousemove', e=>{
+  if(!fpActive) return;
+  fpYaw  -= e.movementX*LOOK_SENS;
+  fpPitch -= e.movementY*LOOK_SENS;
+  fpPitch = Math.max(-Math.PI*.42, Math.min(Math.PI*.42, fpPitch));
+  fpEuler.set(fpPitch, fpYaw, 0);
+  camera.quaternion.setFromEuler(fpEuler);
+});
+document.addEventListener('pointerlockchange', ()=>{
+  fpActive = document.pointerLockElement===renderer.domElement;
+  updateUI();
+});
+
+function enterFP(){
+  const dir=new THREE.Vector3(); camera.getWorldDirection(dir);
+  fpYaw = Math.atan2(dir.x,dir.z)+Math.PI;
+  fpPitch = Math.asin(-dir.y);
+  camera.position.y=EYE;
+  orbit.enabled=false;
+  renderer.domElement.requestPointerLock();
+}
+function exitFP(){
+  document.exitPointerLock();
+  orbit.enabled=true;
+  fpActive=false;
+  updateUI();
+}
+function updateUI(){
+  const ui=document.getElementById('ui');
+  const btn=document.getElementById('modeBtn');
+  if(fpActive){
+    ui.textContent='WASD to walk · Mouse to look · ESC to exit';
+    btn.textContent='Orbit Mode';
+  } else {
+    ui.textContent='Drag to explore · Scroll to zoom';
+    btn.textContent='Walk Mode';
+  }
+}
+
+document.getElementById('modeBtn').addEventListener('click',()=>{
+  fpActive ? exitFP() : enterFP();
+});
+document.addEventListener('keydown', e=>{
+  if(e.code==='Escape'&&fpActive) exitFP();
+});
+
+function updateFP(delta){
+  if(!fpActive) return;
+  const fwd=Number(fpKeys['KeyW']||fpKeys['ArrowUp'])-Number(fpKeys['KeyS']||fpKeys['ArrowDown']);
+  const str=Number(fpKeys['KeyD']||fpKeys['ArrowRight'])-Number(fpKeys['KeyA']||fpKeys['ArrowLeft']);
+  const dir=new THREE.Vector3(str,0,-fwd);
+  if(dir.length()>0) dir.normalize();
+  dir.applyEuler(new THREE.Euler(0,fpYaw,0));
+  dir.multiplyScalar(WALK_SPEED*delta);
+  camera.position.add(dir);
+  camera.position.x=Math.max(BOUNDS.minX,Math.min(BOUNDS.maxX,camera.position.x));
+  camera.position.z=Math.max(BOUNDS.minZ,Math.min(BOUNDS.maxZ,camera.position.z));
+  camera.position.y=EYE;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// RESIZE + RENDER LOOP
+// ─────────────────────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  composer.setSize(innerWidth,innerHeight);
+});
+
+const clock=new THREE.Clock();
+let elapsed=0;
+
+function animate(){
+  requestAnimationFrame(animate);
+  const delta=clock.getDelta();
+  elapsed+=delta;
+
+  if(!fpActive) orbit.update();
+  updateFP(delta);
+
+  // candle flicker
+  scene.traverse(obj=>{
+    if(obj.isPointLight&&obj.userData.base!==undefined){
+      obj.intensity=obj.userData.base+Math.sin(elapsed*obj.userData.speed+obj.userData.phase)*.12;
+    }
+  });
+
+  composer.render();
+}
+
+// fade loader
+const loaderEl=document.getElementById('loader');
+const fillEl=document.getElementById('fill');
+let prog=0;
+const steps=[10,25,40,55,70,82,92,100];
+let si=0;
+const iv=setInterval(()=>{
+  if(si>=steps.length){ clearInterval(iv); return; }
+  fillEl.style.width=steps[si++]+'%';
+},80);
+setTimeout(()=>{
+  loaderEl.style.opacity='0';
+  setTimeout(()=>loaderEl.remove(),900);
+},900);
+
+animate();
+</script>
+</body>
+</html>

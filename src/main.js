@@ -6,12 +6,12 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 import { createVault } from './scene/vault.js';
 import { createFloor } from './scene/floor.js';
-import { createWalls } from './scene/walls.js';
+import { createWalls, animateCandles } from './scene/walls.js';
 import { createAtrium } from './scene/atrium.js';
 import { createRailing } from './scene/railing.js';
 import { createBar } from './scene/bar.js';
 import { setupLighting } from './lighting.js';
-import { animateCandles } from './scene/walls.js';
+import { addModeToggle } from './firstPerson.js';
 
 // ── renderer ──────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -30,77 +30,54 @@ scene.background = new THREE.Color('#0D0602');
 scene.fog = new THREE.FogExp2('#1C0A04', 0.035);
 
 // ── camera ────────────────────────────────────────────────────────────
-const camera = new THREE.PerspectiveCamera(
-  58,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  80,
-);
+const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.1, 80);
 camera.position.set(5, 2.2, 9);
 camera.lookAt(0, 1.5, 0);
 
-// ── controls ──────────────────────────────────────────────────────────
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 1.5, 0);
-controls.enableDamping = true;
-controls.dampingFactor = 0.06;
-controls.minDistance = 1.5;
-controls.maxDistance = 18;
-controls.maxPolarAngle = Math.PI * 0.72;
-controls.minPolarAngle = Math.PI * 0.08;
+// ── orbit controls ────────────────────────────────────────────────────
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.target.set(0, 1.5, 0);
+orbit.enableDamping = true;
+orbit.dampingFactor = 0.06;
+orbit.minDistance = 1.5;
+orbit.maxDistance = 18;
+orbit.maxPolarAngle = Math.PI * 0.72;
+orbit.minPolarAngle = Math.PI * 0.08;
 
 // ── post-processing ───────────────────────────────────────────────────
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-
 const bloom = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.55,   // strength
-  0.5,    // radius
-  0.72,   // threshold
+  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.55, 0.5, 0.72,
 );
 composer.addPass(bloom);
 
 // ── build scene ───────────────────────────────────────────────────────
-const loader = document.getElementById('loader');
-const fill = document.getElementById('fill');
+const loaderEl = document.getElementById('loader');
+const fillEl   = document.getElementById('fill');
 
-function setProgress(p) {
-  fill.style.width = `${p}%`;
-}
+function setProgress(p) { fillEl.style.width = `${p}%`; }
 
-async function buildScene() {
-  setProgress(10);
-  setupLighting(scene);
-
-  setProgress(25);
-  createFloor(scene);
-
-  setProgress(40);
-  createWalls(scene);
-
-  setProgress(55);
-  createVault(scene);
-
-  setProgress(70);
-  createAtrium(scene);
-
-  setProgress(82);
-  createRailing(scene);
-
-  setProgress(92);
-  createBar(scene);
-
+function buildScene() {
+  setProgress(10);  setupLighting(scene);
+  setProgress(25);  createFloor(scene);
+  setProgress(40);  createWalls(scene);
+  setProgress(55);  createVault(scene);
+  setProgress(70);  createAtrium(scene);
+  setProgress(82);  createRailing(scene);
+  setProgress(92);  createBar(scene);
   setProgress(100);
 
-  // fade loader out
   setTimeout(() => {
-    loader.style.opacity = '0';
-    setTimeout(() => loader.remove(), 800);
+    loaderEl.style.opacity = '0';
+    setTimeout(() => loaderEl.remove(), 800);
   }, 300);
 }
 
 buildScene();
+
+// ── first-person mode toggle ──────────────────────────────────────────
+const fp = addModeToggle(camera, renderer, orbit);
 
 // ── resize ────────────────────────────────────────────────────────────
 window.addEventListener('resize', () => {
@@ -112,14 +89,16 @@ window.addEventListener('resize', () => {
 
 // ── render loop ───────────────────────────────────────────────────────
 const clock = new THREE.Clock();
+let elapsed = 0;
 
 function animate() {
   requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
+  const delta = clock.getDelta();
+  elapsed += delta;
 
-  controls.update();
-  animateCandles(scene, t);
-
+  if (!fp.isActive()) orbit.update();
+  fp.update(delta);
+  animateCandles(scene, elapsed);
   composer.render();
 }
 
