@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── Player group (invisible geometry — just a position anchor) ──
     const playerGroup = new THREE.Group();
-    playerGroup.position.set(0, 0, 12);
+    playerGroup.position.set(14, 0, 10);
     scene3d.add(playerGroup);
 
     // ════════════════════════════════════════════════════════
@@ -360,7 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ════════════════════════════════════════════════════════
     const avatar    = document.getElementById('player-avatar');
     const wrapper   = document.getElementById('game-wrapper');
-    let avatarFacing = 'right';
+    let avatarFacing = 'down';
 
     // ── NPC DOM Sprites ─────────────────────────────────────
     // Each NPC gets a positioned DOM element projected from its 3D spot position
@@ -576,7 +576,6 @@ document.addEventListener("DOMContentLoaded", () => {
         projectNPCs();
         drawCharacter();
         drawFlask(dt);
-        drawMinimap();
         renderer.render(scene3d, camera);
     }
 
@@ -596,16 +595,17 @@ document.addEventListener("DOMContentLoaded", () => {
     // Load sprite assets
     const sprAssets = {};
     let sprLoadedCount = 0;
-    const SPR_TOTAL = 4;
+    const SPR_TOTAL = 5;
     function loadSpr(key, src) {
         const img = new Image();
         img.onload = () => { sprAssets[key] = img; sprLoadedCount++; };
         img.src = src;
     }
-    loadSpr('walkFront', 'avatar_walk_front.png');   // 1308x267 — 6 frames, walk right
+    loadSpr('walkFront', 'avatar_walk_front.png');   // 1308x267 — 6 frames, walk front
     loadSpr('walkBack',  'avatar_walk_back.png');    // 1308x267 — 6 frames, walk back
-    loadSpr('idleFront', 'avatar_idle_front.png');   // 909x1536 — idle facing player
-    loadSpr('idleBack',  'avatar_idle_back.png');    // 909x1536 — idle facing away
+    loadSpr('idleFront', 'avatar_idle_front.png');   // idle facing player
+    loadSpr('idleBack',  'avatar_idle_back.png');    // idle facing away
+    loadSpr('idleSide',  'avatar_idle_side.png');    // side profile — used for left/right
 
     // Walk strip: 6 frames × 218px wide
     const WALK_FRAMES = 6;
@@ -637,21 +637,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } else if (f === 'left') {
             flipH = true;
-            if (walk) {
-                img = sprAssets.walkFront;
-                sx = frame * WALK_FW; sy = 0; sw = WALK_FW; sh = WALK_FH;
-            } else {
-                img = sprAssets.idleFront;
-                sx = 0; sy = 0; sw = img.naturalWidth; sh = img.naturalHeight;
-            }
+            img = walk ? sprAssets.walkFront : sprAssets.idleSide;
+            sx = walk ? frame * WALK_FW : 0;
+            sy = 0; sw = walk ? WALK_FW : img.naturalWidth; sh = walk ? WALK_FH : img.naturalHeight;
         } else if (f === 'right') {
-            if (walk) {
-                img = sprAssets.walkFront;
-                sx = frame * WALK_FW; sy = 0; sw = WALK_FW; sh = WALK_FH;
-            } else {
-                img = sprAssets.idleFront;
-                sx = 0; sy = 0; sw = img.naturalWidth; sh = img.naturalHeight;
-            }
+            img = walk ? sprAssets.walkFront : sprAssets.idleSide;
+            sx = walk ? frame * WALK_FW : 0;
+            sy = 0; sw = walk ? WALK_FW : img.naturalWidth; sh = walk ? WALK_FH : img.naturalHeight;
         } else {
             // down — toward camera
             if (walk) {
@@ -691,6 +683,61 @@ document.addEventListener("DOMContentLoaded", () => {
     const overlay      = document.getElementById('transition-overlay');
     const zoneBanner   = document.getElementById('zone-banner');
     const scannerPanel = document.getElementById('scanner-panel');
+
+    // ── Scan widget: upload wine label image → Gemini vision ─
+    const scanInput  = document.getElementById('scan-upload-input');
+    const scanResult = document.getElementById('scan-result');
+
+    function escapeHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    if (scanInput) scanInput.addEventListener('change', async e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        scanResult.classList.remove('hidden');
+        scanResult.textContent = 'Analysing wine label…';
+
+        const toBase64 = f => new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(r.result.split(',')[1]);
+            r.onerror = rej;
+            r.readAsDataURL(f);
+        });
+
+        try {
+            const b64 = await toBase64(file);
+            const apiKey = prompt('Enter your Anthropic API key to scan this wine:');
+            if (!apiKey) { scanResult.textContent = 'API key required to scan.'; return; }
+
+            const resp = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-dangerous-direct-browser-access': 'true',
+                },
+                body: JSON.stringify({
+                    model: 'claude-haiku-4-5-20251001',
+                    max_tokens: 400,
+                    messages: [{
+                        role: 'user',
+                        content: [
+                            { type: 'image', source: { type: 'base64', media_type: file.type, data: b64 } },
+                            { type: 'text',  text: 'You are a sommelier. Identify this wine from the label. Respond with: wine name, vintage, region, grape variety, tasting notes (2 sentences), and a food pairing. Keep it concise.' }
+                        ]
+                    }]
+                })
+            });
+            const data = await resp.json();
+            const text = data?.content?.[0]?.text || 'Could not identify wine.';
+            scanResult.innerHTML = text.split('\n').filter(Boolean).map(l => `<p style="margin:0 0 6px">${escapeHtml(l)}</p>`).join('');
+        } catch (err) {
+            scanResult.textContent = 'Scan failed. Please try again.';
+        }
+        scanInput.value = '';
+    });
     const btnFloor     = document.getElementById('btn-floor-toggle');
 
     function updateFloorBtn() {

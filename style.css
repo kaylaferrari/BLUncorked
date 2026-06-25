@@ -176,18 +176,55 @@ body {
 
 #interact-prompt.hidden { display: none; }
 
-/* ═══════════════════ MINIMAP ═══════════════════ */
-#minimap {
+/* ═══════════════════ SCAN WIDGET ═══════════════════ */
+#scan-widget {
     position: absolute;
-    top: 12px;
-    right: 14px;
-    width: 120px;
-    height: 120px;
+    bottom: 18px;
+    right: 18px;
+    width: 200px;
+    background: rgba(20,10,4,0.88);
+    border: 1px solid rgba(138,90,40,0.7);
+    border-radius: 10px;
     z-index: 20;
-    border-radius: 50%;
-    pointer-events: none;
-    opacity: 0.9;
+    overflow: hidden;
 }
+
+#scan-widget-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid rgba(138,90,40,0.4);
+    color: #e8c880;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    font-family: 'Georgia', serif;
+}
+
+#scan-upload-label {
+    display: block;
+    padding: 10px 12px;
+    color: #c8a060;
+    font-size: 0.76rem;
+    font-family: 'Georgia', serif;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s;
+}
+#scan-upload-label:hover { background: rgba(138,90,40,0.25); }
+
+#scan-result {
+    padding: 10px 12px;
+    color: #f0ddb8;
+    font-size: 0.75rem;
+    font-family: 'Georgia', serif;
+    line-height: 1.5;
+    border-top: 1px solid rgba(138,90,40,0.3);
+    max-height: 160px;
+    overflow-y: auto;
+}
+#scan-result.hidden { display: none; }
 
 /* ═══════════════════ DIALOGUE BOX (ambient) ═══════════════════ */
 #dialogue-box {
@@ -365,7 +402,7 @@ body {
 #floor-nav {
     position: absolute;
     bottom: 18px;
-    right: 18px;
+    left: 18px;
     z-index: 20;
 }
 

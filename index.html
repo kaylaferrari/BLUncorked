@@ -9,17 +9,16 @@
 <body>
     <div id="game-wrapper">
 
-        <!-- ═══ THREE.JS CANVAS (fills game scene area) ═══ -->
+        <!-- ═══ THREE.JS CANVAS ═══ -->
         <canvas id="three-canvas"></canvas>
 
-        <!-- ═══ PLAYER AVATAR (DOM overlay, positioned by JS from 3D projection) ═══ -->
-        <div id="player-avatar" data-facing="right" data-state="idle">
+        <!-- ═══ PLAYER AVATAR ═══ -->
+        <div id="player-avatar" data-facing="down" data-state="idle">
             <canvas id="avatar-canvas" width="270" height="480"></canvas>
             <div id="avatar-shadow"></div>
-            <div class="avatar-label">You</div>
         </div>
 
-        <!-- ═══ ZONE BANNER (proximity notification) ═══ -->
+        <!-- ═══ ZONE BANNER ═══ -->
         <div id="zone-banner" class="hidden">
             <span id="zone-banner-icon"></span>
             <span id="zone-banner-name"></span>
@@ -28,9 +27,6 @@
 
         <!-- ═══ INTERACT PROMPT ═══ -->
         <div id="interact-prompt" class="hidden">[ E ] Interact</div>
-
-        <!-- ═══ MINIMAP ═══ -->
-        <canvas id="minimap"></canvas>
 
         <!-- ═══ DIALOGUE BOX ═══ -->
         <div id="dialogue-box" class="hidden"></div>
@@ -56,7 +52,7 @@
             <div id="zone-panel-body"></div>
         </div>
 
-        <!-- ═══ WINE SCANNER PANEL ═══ -->
+        <!-- ═══ WINE SCANNER PANEL (full overlay) ═══ -->
         <div id="scanner-panel" class="panel hidden">
             <div class="panel-header">
                 <span class="panel-avatar">🍷</span>
@@ -70,13 +66,26 @@
             </div>
         </div>
 
+        <!-- ═══ WINE SCAN WIDGET (bottom right) ═══ -->
+        <div id="scan-widget">
+            <div id="scan-widget-header">
+                <span>🍷</span>
+                <span>Scan a Wine</span>
+            </div>
+            <label id="scan-upload-label" for="scan-upload-input">
+                📷 Upload label to identify
+                <input type="file" id="scan-upload-input" accept="image/*" style="display:none">
+            </label>
+            <div id="scan-result" class="hidden"></div>
+        </div>
+
         <!-- ═══ FLOOR NAV ═══ -->
         <div id="floor-nav">
             <button id="btn-floor-toggle">▼ Go Downstairs</button>
         </div>
 
-        <!-- ═══ CONTROLS HINT (fades after first move) ═══ -->
-        <div id="controls-hint">WASD or click to walk · E to interact · Q/R rotate camera</div>
+        <!-- ═══ CONTROLS HINT ═══ -->
+        <div id="controls-hint">WASD or click to walk · E to interact</div>
 
         <!-- ═══ SCENE TRANSITION OVERLAY ═══ -->
         <div id="transition-overlay"></div>
