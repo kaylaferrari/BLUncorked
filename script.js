@@ -506,9 +506,8 @@ document.addEventListener("DOMContentLoaded", () => {
     //  RENDERER RESIZE
     // ════════════════════════════════════════════════════════
     function onResize() {
-        const uiH = document.getElementById('ui-bar').offsetHeight || 0;
         const W = wrapper.clientWidth  || window.innerWidth;
-        const H = (wrapper.clientHeight || window.innerHeight) - uiH;
+        const H = wrapper.clientHeight || window.innerHeight;
         if (W < 1 || H < 1) return;
         renderer.setSize(W, H, false);
         camera.aspect = W / H;

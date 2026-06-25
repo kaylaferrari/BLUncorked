@@ -18,8 +18,6 @@ body {
     max-width: 1280px;
     aspect-ratio: 16 / 9;
     background: #000;
-    display: flex;
-    flex-direction: column;
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0,0,0,0.8);
@@ -29,7 +27,9 @@ body {
 #three-canvas {
     display: block;
     width: 100%;
-    flex-grow: 1;
+    height: 100%;
+    position: absolute;
+    top: 0; left: 0;
     cursor: crosshair;
     touch-action: none;
 }
@@ -183,151 +183,6 @@ body {
     border-radius: 50%;
     pointer-events: none;
     opacity: 0.9;
-}
-
-/* ═══════════════════ UI BAR ═══════════════════ */
-#ui-bar {
-    height: 18%;
-    background: linear-gradient(to bottom, #d29d66, #b17541);
-    border-top: 6px solid #86532d;
-    display: flex;
-    align-items: center;
-    padding: 1% 2%;
-    gap: 2%;
-    z-index: 20;
-    box-shadow: inset 0 5px 10px rgba(0,0,0,0.2);
-    flex-shrink: 0;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 2%;
-    flex: 1;
-    align-items: center;
-}
-
-.action-buttons button {
-    background: #dcb38a;
-    border: 4px solid #6b3e1b;
-    border-radius: 50%;
-    width: 10vh;
-    height: 10vh;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.95rem;
-    color: #331a08;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.1s;
-    box-shadow: 2px 4px 8px rgba(0,0,0,0.3);
-    font-family: 'Georgia', serif;
-}
-
-.action-buttons button.active {
-    background: #fcebd5;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.15), 0 0 14px rgba(255,255,200,0.5);
-    transform: scale(1.06);
-    border-color: #8b5523;
-}
-
-/* Floor indicator */
-#floor-indicator {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-}
-
-#floor-label {
-    font-size: 0.7rem;
-    color: #331a08;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-weight: bold;
-}
-
-#floor-arrows { display: flex; gap: 4px; }
-
-.floor-btn {
-    background: #c8954a;
-    border: 2px solid #6b3e1b;
-    border-radius: 6px;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
-    color: #331a08;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.1s;
-}
-
-.floor-btn:hover:not(:disabled) {
-    background: #e8a85a;
-    transform: scale(1.1);
-}
-
-.floor-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-/* Inventory */
-.inventory-slots {
-    display: flex;
-    gap: 8px;
-    flex: 1.2;
-    justify-content: flex-end;
-    align-items: center;
-}
-
-.slot {
-    width: 9vh;
-    height: 9vh;
-    background: rgba(107,62,27,0.6);
-    border: 3px solid #6b3e1b;
-    border-radius: 12px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 2.2rem;
-    box-shadow: inset 2px 2px 6px rgba(0,0,0,0.4);
-    cursor: pointer;
-    transition: border-color 0.15s;
-}
-
-.slot:hover { border-color: #d4a860; }
-
-#btn-scan-wine {
-    background: linear-gradient(135deg, #5a2a10, #9a5820);
-    border: 1px solid #c8963c;
-    color: #f5e8c8;
-    border-radius: 10px;
-    padding: 6px 12px;
-    font-family: 'Georgia', serif;
-    font-size: 0.82rem;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s;
-    margin-left: 8px;
-}
-#btn-scan-wine:hover {
-    background: linear-gradient(135deg, #7a3a14, #c8963c);
-}
-
-/* Scanner panel */
-#scanner-panel {
-    width: min(520px, 95%);
-    max-height: 88%;
-    overflow: hidden;
-}
-#scanner-panel .panel-header {
-    position: sticky;
-    top: 0;
-    z-index: 1;
 }
 
 /* ═══════════════════ DIALOGUE BOX (ambient) ═══════════════════ */
