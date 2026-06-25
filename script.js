@@ -636,13 +636,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 sx = 0; sy = 0; sw = img.naturalWidth; sh = img.naturalHeight;
             }
         } else if (f === 'left') {
-            // Walk right strip, mirrored
-            img = sprAssets.walkFront;
-            sx = frame * WALK_FW; sy = 0; sw = WALK_FW; sh = WALK_FH;
             flipH = true;
+            if (walk) {
+                img = sprAssets.walkFront;
+                sx = frame * WALK_FW; sy = 0; sw = WALK_FW; sh = WALK_FH;
+            } else {
+                img = sprAssets.idleFront;
+                sx = 0; sy = 0; sw = img.naturalWidth; sh = img.naturalHeight;
+            }
         } else if (f === 'right') {
-            img = sprAssets.walkFront;
-            sx = frame * WALK_FW; sy = 0; sw = WALK_FW; sh = WALK_FH;
+            if (walk) {
+                img = sprAssets.walkFront;
+                sx = frame * WALK_FW; sy = 0; sw = WALK_FW; sh = WALK_FH;
+            } else {
+                img = sprAssets.idleFront;
+                sx = 0; sy = 0; sw = img.naturalWidth; sh = img.naturalHeight;
+            }
         } else {
             // down — toward camera
             if (walk) {

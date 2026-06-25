@@ -56,9 +56,6 @@ body {
     image-rendering: auto;
 }
 
-#player-avatar[data-facing="left"] #avatar-canvas {
-    transform: scaleX(-1);
-}
 
 #avatar-shadow {
     width: 40px;
