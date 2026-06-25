@@ -469,70 +469,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ════════════════════════════════════════════════════════
-    //  MINIMAP
-    // ════════════════════════════════════════════════════════
-    const minimapCanvas = document.getElementById('minimap');
-    const mmCtx = minimapCanvas.getContext('2d');
-    const MM_SIZE = 120;
-    minimapCanvas.width  = MM_SIZE;
-    minimapCanvas.height = MM_SIZE;
-
-    // World space → minimap coords
-    function wToMM(wx, wz) {
-        const scale = MM_SIZE / 60;
-        return {
-            x: MM_SIZE/2 + wx * scale,
-            y: MM_SIZE/2 + wz * scale
-        };
-    }
-
-    function drawMinimap() {
-        if (!mmCtx) return;
-        mmCtx.clearRect(0, 0, MM_SIZE, MM_SIZE);
-
-        // Circular clip
-        mmCtx.save();
-        mmCtx.beginPath();
-        mmCtx.arc(MM_SIZE/2, MM_SIZE/2, MM_SIZE/2 - 2, 0, Math.PI*2);
-        mmCtx.clip();
-
-        // Background
-        mmCtx.fillStyle = 'rgba(20,10,4,0.85)';
-        mmCtx.fillRect(0, 0, MM_SIZE, MM_SIZE);
-
-        // Zone dots
-        for (const sp of currentSpots()) {
-            const { x, y } = wToMM(sp.pos[0], sp.pos[2]);
-            mmCtx.beginPath();
-            mmCtx.arc(x, y, 5, 0, Math.PI*2);
-            mmCtx.fillStyle = sp.goto ? '#6cf' :
-                              sp.npc  ? '#fa8' :
-                              sp.zone ? '#fc6' : '#aaa';
-            mmCtx.fill();
-        }
-
-        // Player dot
-        const pp = wToMM(playerGroup.position.x, playerGroup.position.z);
-        mmCtx.beginPath();
-        mmCtx.arc(pp.x, pp.y, 5, 0, Math.PI*2);
-        mmCtx.fillStyle = '#fff';
-        mmCtx.fill();
-
-        mmCtx.restore();
-
-        // Border ring
-        mmCtx.beginPath();
-        mmCtx.arc(MM_SIZE/2, MM_SIZE/2, MM_SIZE/2 - 2, 0, Math.PI*2);
-        mmCtx.strokeStyle = '#8a5a28';
-        mmCtx.lineWidth = 3;
-        mmCtx.stroke();
-
-        // Floor label
-        mmCtx.fillStyle = '#e8c880';
-        mmCtx.font = '9px Georgia, serif';
-        mmCtx.textAlign = 'center';
-        mmCtx.fillText(currentScene === 'upper' ? 'UPPER BAR' : 'SUSSEX CELLAR', MM_SIZE/2, MM_SIZE - 6);
-    }
+    //  MINIMAP — removed
 
     // ════════════════════════════════════════════════════════
     //  RENDERER RESIZE
